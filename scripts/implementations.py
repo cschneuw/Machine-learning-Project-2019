@@ -2,6 +2,47 @@
 """ Implementation of Machine Learning functions. """
 import numpy as np
 
+# %% Model building, Standarization and Mini-batch
+
+def standardize(x):
+    """Standardize the original data set."""
+    
+    mean_x = np.mean(x)
+    x = x - mean_x
+    std_x = np.std(x)
+    x = x / std_x
+    return x, mean_x, std_x
+
+
+def build_model_data(height, weight):
+    """Form (y,tX) to get regression data in matrix form."""
+    
+    y = weight
+    x = height
+    num_samples = len(y)
+    tx = np.c_[np.ones(num_samples), x]
+    return y, tx
+
+
+def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
+    """ Generate a minibatch iterator for a dataset. """
+    
+    data_size = len(y)
+
+    if shuffle:
+        shuffle_indices = np.random.permutation(np.arange(data_size))
+        shuffled_y = y[shuffle_indices]
+        shuffled_tx = tx[shuffle_indices]
+    else:
+        shuffled_y = y
+        shuffled_tx = tx
+    for batch_num in range(num_batches):
+        start_index = batch_num * batch_size
+        end_index = min((batch_num + 1) * batch_size, data_size)
+        if start_index != end_index:
+            yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
+
+# %% Cost, Loss function and Gradient
 
 def calculate_mse(e):
     """Calculate the mse for vector e."""
@@ -24,6 +65,8 @@ def compute_gradient(y, tx, w):
     return g, e
 
 
+# %% Machine Learning methods
+
 def least_squares(y, tx):
     """ Least squares regression using normal equations. """
     
@@ -45,26 +88,6 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         w.append(w_)
         loss.append(loss_)
     return (w, loss)
-
-
-def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
-    """ Generate a minibatch iterator for a dataset. """
-    
-    data_size = len(y)
-
-    if shuffle:
-        shuffle_indices = np.random.permutation(np.arange(data_size))
-        shuffled_y = y[shuffle_indices]
-        shuffled_tx = tx[shuffle_indices]
-    else:
-        shuffled_y = y
-        shuffled_tx = tx
-    for batch_num in range(num_batches):
-        start_index = batch_num * batch_size
-        end_index = min((batch_num + 1) * batch_size, data_size)
-        if start_index != end_index:
-            yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
-
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     """ Linear regression using stochastic gradient descent. """
@@ -103,6 +126,7 @@ def reg_logistic_regression(y, tx, lambda_, initial w, max_iters, gamma):
     raise NotImplementedError
     return (w, loss)
 
+# %% Addtional methods
 
 def transform_factor(x, column_idx, nlevels):
     """ Transform a column with categorical variables into different columns with binary data.
