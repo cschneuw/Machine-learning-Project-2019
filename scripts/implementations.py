@@ -2,7 +2,7 @@
 """ Implementation of Machine Learning functions. """
 import numpy as np
 
-# %% Model building, Standarization and Mini-batch
+# %% Standarization and Mini-batch
 
 def standardize(x):
     """ Standardize the original data set."""
@@ -11,7 +11,7 @@ def standardize(x):
     x = x - mean_x
     std_x = np.std(x)
     x = x / std_x
-    return x, mean_x, std_x
+    return x
 
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
@@ -120,7 +120,7 @@ def build_poly(x, degree):
     return poly
 
 def split_data(x, y, ratio, seed=1):
-    """split the dataset based on the split ratio."""
+    """ Split the dataset based on the split ratio."""
     
     np.random.seed(seed)
     num_row = len(y)
@@ -139,7 +139,7 @@ def split_data(x, y, ratio, seed=1):
 # %% Cross-validation 
 
 def build_k_indices(y, k_fold, seed):
-    """build k indices for k-fold."""
+    """ Build k indices for k-fold."""
     num_row = y.shape[0]
     interval = int(num_row / k_fold)
     np.random.seed(seed)
