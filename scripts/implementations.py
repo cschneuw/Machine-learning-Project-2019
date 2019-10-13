@@ -11,6 +11,7 @@ def standardize(x):
     x = x - mean_x
     std_x = np.std(x)
     x = x / std_x
+    
     return x
 
 
@@ -38,6 +39,7 @@ def compute_mse(y, tx, w):
     """ Calculate the mse for vector e."""
     
     e = y - tx.dot(w)
+    
     return e.T.dot(e) / (2*len(y))
 
 
@@ -46,6 +48,7 @@ def compute_gradient(y, tx, w):
     
     e = y - tx.dot(w)
     g = -tx.T.dot(e) / len(e)
+    
     return g, e
 
 # %% Machine Learning methods
@@ -55,37 +58,31 @@ def least_squares(y, tx):
     
     w = np.linalg.solve(tx.T.dot(tx), tx.T.dot(y))
     loss = compute_mse(y,tx, w)
+    
     return (w, loss)
 
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """ Linear regression using gradient descent. """
     
-    w = [initial_w]
-    loss = []
-    w_ = initial_w
+    w = initial_w
     for n_iter in range(max_iters):
-        g, e = compute_gradient(y, tx, w_)
-        loss_ = compute_mse(y, tx, w_)
-        w_ = w_ - gamma * g
-        w.append(w_)
-        loss.append(loss_)
+        g, e = compute_gradient(y, tx, w)
+        loss = compute_mse(y, tx, w)
+        w = w - gamma * g
+
     return (w, loss)
 
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     """ Linear regression using stochastic gradient descent. """
     
-    w = [initial_w]
-    loss = []
-    w_ = initial_w
+    w = initial_w
     for n_iter in range(max_iters):
         for y_batch, tx_batch in batch_iter(y, tx, batch_size=1, num_batches=1):
-            g, e = compute_gradient(y_batch, tx_batch, w_)
-            w_ = w_ - gamma * g
-            loss_ = compute_mse(y, tx, w_)
-            w.append(w_)
-            loss.append(loss_)
+            g, e = compute_gradient(y_batch, tx_batch, w)
+            w = w - gamma * g
+            loss = compute_mse(y, tx, w)
 
     return (w, loss)
 
@@ -96,6 +93,7 @@ def ridge_regression(y, tx, lambda_):
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
     w= np.linalg.solve(tx.T.dot(tx) + aI, tx.T.dot(y))
     loss = compute_mse(y,tx,w)
+    
     return (w, loss)
 
 
@@ -140,12 +138,14 @@ def split_data(x, y, ratio, seed=1):
 
 def build_k_indices(y, k_fold, seed):
     """ Build k indices for k-fold."""
+    
     num_row = y.shape[0]
     interval = int(num_row / k_fold)
     np.random.seed(seed)
     indices = np.random.permutation(num_row)
     k_indices = [indices[k * interval: (k + 1) * interval]
                  for k in range(k_fold)]
+    
     return np.array(k_indices)
 
 
