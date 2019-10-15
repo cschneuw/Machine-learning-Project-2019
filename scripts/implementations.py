@@ -124,11 +124,12 @@ def split_data(x, y, ratio, seed=1):
     num_row = len(y)
     indices = np.random.permutation(num_row)
     index_split = int(np.floor(ratio * num_row))
-    index_tr = indices[: index_split], 
+  
+    index_tr = indices[: index_split] 
     index_te = indices[index_split:]
     
-    x_tr = x[index_tr]
-    x_te = x[index_te]
+    x_tr = x[index_tr, :]
+    x_te = x[index_te, :]
     y_tr = y[index_tr]
     y_te = y[index_te]
     
@@ -155,8 +156,8 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
     te_indices = k_indices[k]
     #tr_indices = k_indices[:k] + k_indices[(k + 1):]
     tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices] 
-    x_tr = x[tr_indices]
-    x_te = x[te_indices]
+    x_tr = x[tr_indices, :]
+    x_te = x[te_indices, :]
     y_tr = y[tr_indices]
     y_te = y[te_indices]
         
