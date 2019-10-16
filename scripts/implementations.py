@@ -111,7 +111,8 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
 # %% Polynomials, Split data
 
 def build_poly(x, degree):
-    """ Lolynomial basis functions for input data x, for j=0 up to j=degree."""
+    """ Polynomial basis functions for input data x, for j=0 up to j=degree."""
+    
     poly = np.ones((len(x), 1))
     for deg in range(1, degree+1):
         poly = np.c_[poly, np.power(x, deg)]
@@ -154,7 +155,6 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
     """return the loss of ridge regression."""
 
     te_indices = k_indices[k]
-    #tr_indices = k_indices[:k] + k_indices[(k + 1):]
     tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices] 
     x_tr = x[tr_indices, :]
     x_te = x[te_indices, :]
