@@ -11,7 +11,6 @@ def standardize(x):
     x = x - mean_x
     std_x = np.std(x)
     x = x / std_x
-    
     return x
 
 
@@ -33,23 +32,41 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         if start_index != end_index:
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
-# %% Loss function and Gradient
+# %% Loss functions, Gradients and Hessians
+
+def sigmoid(t):
+    """apply sigmoid function on t."""
+
+    return 1/(1+np.exp(-t))
+
 
 def compute_mse(y, tx, w):
     """ Calculate the mse for vector e."""
     
     e = y - tx.dot(w)
-    
     return e.T.dot(e) / (2*len(y))
+
+
+def compute_loglikelihood(y, tx, w):
+    """compute the cost by negative log likelihood."""
+    
+    h = sigmoid(tx.dot(w))
+    return -y.T.dot(np.log(h))-(1-y).T.dot(np.log(1-h))
 
 
 def compute_gradient(y, tx, w):
     """ Compute the gradient."""
     
     e = y - tx.dot(w)
-    g = -tx.T.dot(e) / len(e)
+    return -tx.T.dot(e) / len(e)
+
+
+def compute_log_gradient(y, tx, w):
+    """compute the gradient of loss."""
     
-    return g, e
+    h = sigmoid(tx.dot(w))
+    return tx.T.dot(h-y)
+
 
 # %% Machine Learning methods
 
@@ -70,7 +87,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         g, e = compute_gradient(y, tx, w)
         loss = compute_mse(y, tx, w)
         w = w - gamma * g
-
+        
     return (w, loss)
 
 
@@ -83,7 +100,7 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
             g, e = compute_gradient(y_batch, tx_batch, w)
             w = w - gamma * g
             loss = compute_mse(y, tx, w)
-
+            
     return (w, loss)
 
 
@@ -91,21 +108,36 @@ def ridge_regression(y, tx, lambda_):
     """ Ridge regression using normal equations. """
     
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
-    w= np.linalg.solve(tx.T.dot(tx) + aI, tx.T.dot(y))
+    w = np.linalg.solve(tx.T.dot(tx) + aI, tx.T.dot(y))
     loss = compute_mse(y,tx,w)
     
     return (w, loss)
 
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
-    """ Logistic regression using gradient descent or SGD. """
-    raise NotImplementedError
+    """ Logistic regression using SGD. """
+    
+    w = initial_w
+    for n_iter in range(max_iters):
+        for y_batch, tx_batch in batch_iter(y, tx, batch_size=1, num_batches=1):
+            g = calculate_log_gradient(y, tx, w)
+            
+            loss = calculate_loglikelihood(y, tx, w)
+            
     return (w, loss)
 
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    """ Regularized logistic regression using gradient descent or SGD. """
-    raise NotImplementedError
+    """ Regularized logistic regression using SGD. """
+    
+    N = len(y)
+    w = initial_w
+    for n_iter in range(max_iters):
+        for y_batch, tx_batch in batch_iter(y, tx, batch_size=1, num_batches=1):
+            g = calculate_gradient(y, tx, w)+lambda_*w/N
+            w = w - gamma * g
+            loss = calculate_loglikelihood(y, tx, w)+lambda_*np.sum(w**2)/(2*N)
+            
     return (w, loss)
 
 # %% Polynomials, Split data
@@ -116,7 +148,9 @@ def build_poly(x, degree):
     poly = np.ones((len(x), 1))
     for deg in range(1, degree+1):
         poly = np.c_[poly, np.power(x, deg)]
+        
     return poly
+
 
 def split_data(x, y, ratio, seed=1):
     """ Split the dataset based on the split ratio."""
