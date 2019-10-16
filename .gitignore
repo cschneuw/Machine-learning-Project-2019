@@ -2,3 +2,4 @@
 *.csv
 *checkpoint*
 *.zip
+*.pyc
