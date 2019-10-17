@@ -58,7 +58,7 @@ def compute_gradient(y, tx, w):
     """ Compute the gradient."""
     
     e = y - tx.dot(w)
-    return -tx.T.dot(e) / len(e)
+    return - tx.T.dot(e) / len(e)
 
 
 def compute_log_gradient(y, tx, w):
@@ -122,7 +122,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         g = compute_log_gradient(y, tx, w)
         w = w - gamma * g
         loss = compute_loglikelihood(y, tx, w)
-            
+
     return (w, loss)
 
 
