@@ -35,20 +35,20 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
 # %% Loss functions, Gradients and Hessians
 
 def sigmoid(t):
-    """apply sigmoid function on t."""
+    """ Apply sigmoid function on t."""
 
     return 1/(1+np.exp(-t))
 
 
 def compute_mse(y, tx, w):
-    """ Calculate the mse for vector e."""
+    """ Compute the mse for vector e."""
     
     e = y - tx.dot(w)
     return e.T.dot(e) / (2*len(y))
 
 
 def compute_loglikelihood(y, tx, w):
-    """compute the cost by negative log likelihood."""
+    """ Compute the cost by negative log likelihood."""
     
     h = sigmoid(tx.dot(w))
     return -y.T.dot(np.log(h))-(1-y).T.dot(np.log(1-h))
@@ -62,7 +62,7 @@ def compute_gradient(y, tx, w):
 
 
 def compute_log_gradient(y, tx, w):
-    """compute the gradient of loss."""
+    """ Compute the gradient of loss."""
     
     h = sigmoid(tx.dot(w))
     return tx.T.dot(h-y)
@@ -184,7 +184,7 @@ def build_k_indices(y, k_fold, seed):
 
 
 def cross_validation(y, x, k_indices, k, lambda_, degree):
-    """return the loss of ridge regression."""
+    """ Return the loss of ridge regression."""
 
     te_indices = k_indices[k]
     tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices] 
@@ -203,7 +203,7 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
     return np.mean(np.array(loss_tr)), np.mean(np.array(loss_te))
 
 def cross_validation_log(y, x, k_indices, k, lambda_, degree):
-    """return the loss of ridge regression."""
+    """ Return the loss of ridge regression."""
 
     te_indices = k_indices[k]
     tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices] 
