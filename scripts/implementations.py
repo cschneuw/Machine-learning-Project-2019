@@ -115,7 +115,7 @@ def ridge_regression(y, tx, lambda_):
 
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
-    """ Logistic regression using SGD. """
+    """ Logistic regression using GD. """
     
     w = initial_w
     for n_iter in range(max_iters):
@@ -127,7 +127,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
 
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    """ Regularized logistic regression using SGD. """
+    """ Regularized logistic regression using GD. """
     
     N = len(y)
     w = initial_w
@@ -202,20 +202,22 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
     
     return np.mean(np.array(loss_tr)), np.mean(np.array(loss_te))
 
-def cross_validation_log(y, x, k_indices, k, lambda_, degree):
+def cross_validation_log(y, tx, k_indices, k, lambda_, degree, intitial_w, max_iters, gamma):
     """ Return the loss of ridge regression."""
 
     te_indices = k_indices[k]
     tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices] 
-    x_tr = x[tr_indices, :]
-    x_te = x[te_indices, :]
+    x_tr = tx[tr_indices, :]
+    x_te = tx[te_indices, :]
     y_tr = y[tr_indices]
     y_te = y[te_indices]
         
     tx_tr = build_poly(x_tr, degree)
     tx_te = build_poly(x_te, degree)
+    
+    initial_w = np.zeros(tx_tr.shape[1])
         
-    w_tr, loss_tr = reg_logistic_regression(y_tr, tx_tr, lambda_)
+    w_tr, loss_tr = reg_logistic_regression(y_tr, tx_tr, lambda_, initial_w, max_iters, gamma)
         
     loss_te = compute_loglikelihood(y_te, tx_te, w_tr)
     
