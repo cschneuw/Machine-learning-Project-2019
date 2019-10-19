@@ -267,50 +267,41 @@ def missingness_filter(cX, cutoff = 0.5):
 
 def impute_mean(x):
     
-    out = np.zeros(x.shape)
-    for i in range(x.shape[1]):
-        temp = x[:,i]
-        mean = np.nanmean(temp)
-        out[:,i] = np.nan_to_num(temp, nan = mean)
-
-    return out
+    mean = np.nanmean(x, axis=0)
+    inds = np.where(np.isnan(x))
+    x[inds] = np.take(mean, inds[1])
+    return x
 
 
 def impute_median(x):
     
-    out = np.zeros(x.shape)
-    for i in range(x.shape[1]):
-        temp = x[:,i]
-        median = np.nanmedian(temp)
-        out[:,i] = np.nan_to_num(temp, nan = median)
-
-    return out
+    median = np.nanmedian(x, axis=0)
+    inds = np.where(np.isnan(x))
+    x[inds] = np.take(median, inds[1])
+    return x
     
     
 def impute_gaussian(x):
-    out = np.zeros(x.shape)
-    for i in range(x.shape[1]):
-        temp = x[:,i]
-        mean = np.nanmean(temp)
-        std = np.nanstd(temp)
+    
+    inds = np.where(np.isnan(x))
+    mean = np.nanmean(x, axis=0)
+    std = np.nanstd(x, axis=0)
+    x[inds] = np.take(np.random.normal(loc=mean, scale=std), inds[1])
+    return x
 
-        for j in range(x.shape[0]):
-            out[j,i] = np.nan_to_num(temp[j], nan = np.random.normal(loc=mean, scale=std))
-
-    return out
 
 def train_data_formatting(tX, degree = 2, cutoff = 0.6, imputation = impute_mean, interaction = False):
 
     #separating out the categorical variables
-    cont_X, fac_X = separate_factor(tX)
+    #cont_X, fac_X = separate_factor(tX)
     #applying a missingness filter on the columns/features
-    cont_X, to_remove = missingness_filter(cont_X, cutoff)
+    cont_X, to_remove = missingness_filter(tX, cutoff)
     #imputing the missing data
     cont_X = imputation(cont_X)
     poly = build_poly(cont_X, degree)
-    poly = np.concatenate((poly, fac_X), axis=1)
+    #poly = np.concatenate((poly, fac_X), axis=1)
     
-    if lin_comb:
+    if interaction:
         inter = build_interaction(cont_X)
         return np.concatenate((poly, inter), axis=1), to_remove
 
