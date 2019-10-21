@@ -184,7 +184,7 @@ def build_k_indices(y, k_fold, seed):
     return np.array(k_indices)
 
 
-def cross_validation(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_function = 'ls', max_iters = 0, gamma = 0.05):
+def cross_validation(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_function = 'ls', max_iters = 0, gamma = 0.05, verbose = False):
     """ Returns a list the train losses and test losses of the cross validation."""
     
     losses_tr_cv = np.empty((len(lambdas), len(degrees)))
@@ -241,6 +241,9 @@ def cross_validation(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_functio
             if ml_function == 'lr' or 'rlr':
                 losses_tr_cv[index_lambda][index_degree] = np.mean(losses_tr)
                 losses_te_cv[index_lambda][index_degree] = np.mean(losses_te)
+            
+            if verbose == True:
+                print('Completed degree'+str(degree)+'/'+str(len(degrees)))
     
     return losses_tr_cv, losses_te_cv
 
