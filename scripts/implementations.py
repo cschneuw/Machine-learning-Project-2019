@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """ Implementation of Machine Learning functions. """
 import numpy as np
+import matplotlib.pyplot as plt
 
 # %% Standarization and Mini-batch
 
@@ -183,45 +184,94 @@ def build_k_indices(y, k_fold, seed):
     return np.array(k_indices)
 
 
-def cross_validation(y, x, k_indices, k, lambda_, degree):
-    """ Return the loss of ridge regression."""
+def cross_validation(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_function = 'ls', max_iters = 0, gamma = 0.05, verbose = False):
+    """ Returns a list the train losses and test losses of the cross validation."""
 
-    te_indices = k_indices[k]
-    tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices]
-    x_tr = x[tr_indices, :]
-    x_te = x[te_indices, :]
-    y_tr = y[tr_indices]
-    y_te = y[te_indices]
+    losses_tr_cv = np.empty((len(lambdas), len(degrees)))
+    losses_te_cv = np.empty((len(lambdas), len(degrees)))
 
-    tx_tr = build_poly(x_tr, degree)
-    tx_te = build_poly(x_te, degree)
+    for index_lambda, lambda_ in enumerate(lambdas):
+        for index_degree, degree in enumerate(degrees):
+            losses_tr = np.empty(k_fold)
+            losses_te = np.empty(k_fold)
+            for k in range(k_fold):
+                loss_tr = 0
+                loss_te = 0
+                te_indices = k_indices[k]
+                tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices]
+                x_tr = x[tr_indices, :]
+                x_te = x[te_indices, :]
+                y_tr = y[tr_indices]
+                y_te = y[te_indices]
 
-    w_tr, loss_tr = ridge_regression(y_tr, tx_tr, lambda_)
+                tx_tr = build_poly(x_tr, np.int(degree))
+                tx_te = build_poly(x_te, np.int(degree))
 
-    loss_te = compute_mse(y_te, tx_te, w_tr)
+                if ml_function == 'gd':
+                    initial_w = np.zeros(tx_tr.shape[1])
+                    w_tr, loss_tr = least_squares_GD(y_tr, tx_tr, initial_w, max_iters, gamma)
+                    loss_te = compute_mse(y_te, tx_te, w_tr)
 
-    return loss_tr, loss_te
+                if ml_function == 'sgd' :
+                    initial_w = np.zeros(tx_tr.shape[1])
+                    w_tr, loss_tr = least_squares_SGD(y_tr, tx_tr, initial_w, max_iters, gamma)
+                    loss_te = compute_mse(y_te, tx_te, w_tr)
 
-def cross_validation_log(y, tx, k_indices, k, lambda_, degree, intitial_w, max_iters, gamma):
-    """ Return the loss of ridge regression."""
+                if ml_function == 'ri':
+                    w_tr, loss_tr = ridge_regression(y_tr, tx_tr, lambda_)
+                    loss_te = compute_mse(y_te, tx_te, w_tr)
 
-    te_indices = k_indices[k]
-    tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices]
-    x_tr = tx[tr_indices, :]
-    x_te = tx[te_indices, :]
-    y_tr = y[tr_indices]
-    y_te = y[te_indices]
+                if ml_function == 'lr':
+                    initial_w = np.zeros(tx_tr.shape[1])
+                    w_tr, loss_tr = logistic_regression(y_tr, tx_tr, initial_w, max_iters, gamma)
+                    loss_te = compute_loglikelihood(y_te, tx_te, w_tr)
 
-    tx_tr = build_poly(x_tr, degree)
-    tx_te = build_poly(x_te, degree)
+                if ml_function == 'rlr':
+                    initial_w = np.zeros(tx_tr.shape[1])
+                    w_tr, loss_tr = reg_logistic_regression(y_tr, tx_tr, lambda_, initial_w, max_iters, gamma)
+                    loss_te = compute_loglikelihood(y_te, tx_te, w_tr)
 
-    initial_w = np.zeros(tx_tr.shape[1])
+                losses_tr[k] = loss_tr
+                losses_te[k] = loss_te
 
-    w_tr, loss_tr = reg_logistic_regression(y_tr, tx_tr, lambda_, initial_w, max_iters, gamma)
+            if ml_function == 'gd' or 'sgd' or 'ri':
+                losses_tr_cv[index_lambda][index_degree] = np.mean(np.sqrt(2*losses_tr))
+                losses_te_cv[index_lambda][index_degree] = np.mean(np.sqrt(2*losses_te))
 
-    loss_te = compute_loglikelihood(y_te, tx_te, w_tr)
+            if ml_function == 'lr' or 'rlr':
+                losses_tr_cv[index_lambda][index_degree] = np.mean(losses_tr)
+                losses_te_cv[index_lambda][index_degree] = np.mean(losses_te)
 
-    return loss_tr, loss_te
+            if verbose == True:
+                print('Completed degree '+str(degree)+'/'+str(len(degrees)))
+
+    return losses_tr_cv, losses_te_cv
+
+
+def cross_validation_visualization(degrees, loss_tr, loss_te, lambds=[]):
+    """visualization the curves of train error and test error."""
+    N = len(degrees)
+    cmap = plt.get_cmap('jet_r')
+    mask_tr = np.isfinite(loss_tr)
+    mask_te = np.isfinite(loss_te)
+    if np.array(loss_tr).shape[0] > 1 :
+        for index_degree, degree in enumerate(degrees):
+            color = cmap(float(index_degree)/N)
+            plt.semilogx(lambds[mask_tr[:, index_degree]], loss_tr[:, index_degree][mask_tr[:, index_degree]],
+                         marker=".", linewidth = 0.5, color = color, label='deg'+str(degree))
+            plt.semilogx(lambds[mask_te[:, index_degree]], loss_te[:, index_degree][mask_te[:, index_degree]],
+                         marker="*", linewidth = 0.5, color = color,  label='deg'+str(degree))
+        plt.xlabel("lambda")
+    if np.array(loss_tr).shape[0] == 1 :
+        plt.plot(np.array(degrees)[mask_tr.flatten()],
+                     loss_tr[mask_tr], marker=".", linewidth = 0.5, color='b', label='train')
+        plt.plot(np.array(degrees)[mask_te.flatten()],
+                     loss_te[mask_te], marker="*", linewidth = 0.5, color='r',  label='test')
+        plt.xlabel("degree")
+    plt.ylabel("error")
+    plt.title("cross validation")
+    plt.legend(loc=1)
+    plt.grid(True)
 
 # %% Addtional methods
 

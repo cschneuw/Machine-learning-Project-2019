@@ -18,3 +18,11 @@ scripts/__pycache__/implementations.cpython-37.pyc
 scripts/__pycache__/proj1_helpers.cpython-37.pyc
 scripts/__pycache__/implementations.cpython-37.pyc
 scripts/__pycache__/implementations.cpython-37.pyc
+scripts/degrees.txt
+scripts/gammas.txt
+scripts/lambdas.txt
+scripts/weights.txt
+data/submission_ri_deg7.csv
+data/submissiongddeg1.csv
+data/submissionlsdeg1.csv
+data/submissionrlrdeg1.csv
