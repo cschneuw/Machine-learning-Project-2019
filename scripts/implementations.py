@@ -243,7 +243,7 @@ def cross_validation(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_functio
                 losses_te_cv[index_lambda][index_degree] = np.mean(losses_te)
             
             if verbose == True:
-                print('Completed degree'+str(degree)+'/'+str(len(degrees)))
+                print('Completed degree '+str(degree)+'/'+str(len(degrees)))
     
     return losses_tr_cv, losses_te_cv
 
