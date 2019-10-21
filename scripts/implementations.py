@@ -37,7 +37,7 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
 def sigmoid(t):
     """ Apply sigmoid function on t."""
 
-    return 2/(1+np.exp(-t))-1
+    return 1/(1+np.exp(-t))
 
 
 def compute_mse(y, tx, w):
