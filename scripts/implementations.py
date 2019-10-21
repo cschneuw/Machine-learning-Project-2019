@@ -11,7 +11,6 @@ def standardize(x):
     x = x - mean_x
     std_x = np.std(x)
     x = x / std_x
-
     return x
 
 
@@ -33,23 +32,41 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         if start_index != end_index:
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
-# %% Loss function and Gradient
+# %% Loss functions, Gradients and Hessians
+
+def sigmoid(t):
+    """ Apply sigmoid function on t."""
+
+    return 1/(1+np.exp(-t))
+
 
 def compute_mse(y, tx, w):
-    """ Calculate the mse for vector e."""
+    """ Compute the mse for vector e."""
 
     e = y - tx.dot(w)
-
     return e.T.dot(e) / (2*len(y))
+
+
+def compute_loglikelihood(y, tx, w):
+    """ Compute the cost by negative log likelihood."""
+
+    h = sigmoid(tx.dot(w))
+    return -y.T.dot(np.log(h))-(1-y).T.dot(np.log(1-h))
 
 
 def compute_gradient(y, tx, w):
     """ Compute the gradient."""
 
     e = y - tx.dot(w)
-    g = -tx.T.dot(e) / len(e)
+    return - tx.T.dot(e) / len(e)
 
-    return g, e
+
+def compute_log_gradient(y, tx, w):
+    """ Compute the gradient of loss."""
+
+    h = sigmoid(tx.dot(w))
+    return tx.T.dot(h-y)
+
 
 # %% Machine Learning methods
 
@@ -67,7 +84,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
 
     w = initial_w
     for n_iter in range(max_iters):
-        g, e = compute_gradient(y, tx, w)
+        g = compute_gradient(y, tx, w)
         loss = compute_mse(y, tx, w)
         w = w - gamma * g
 
@@ -80,7 +97,7 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     w = initial_w
     for n_iter in range(max_iters):
         for y_batch, tx_batch in batch_iter(y, tx, batch_size=1, num_batches=1):
-            g, e = compute_gradient(y_batch, tx_batch, w)
+            g = compute_gradient(y_batch, tx_batch, w)
             w = w - gamma * g
             loss = compute_mse(y, tx, w)
 
@@ -91,21 +108,34 @@ def ridge_regression(y, tx, lambda_):
     """ Ridge regression using normal equations. """
 
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
-    w= np.linalg.solve(tx.T.dot(tx) + aI, tx.T.dot(y))
+    w = np.linalg.solve(tx.T.dot(tx) + aI, tx.T.dot(y))
     loss = compute_mse(y,tx,w)
 
     return (w, loss)
 
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
-    """ Logistic regression using gradient descent or SGD. """
-    raise NotImplementedError
+    """ Logistic regression using GD. """
+
+    w = initial_w
+    for n_iter in range(max_iters):
+        g = compute_log_gradient(y, tx, w)
+        w = w - gamma * g
+        loss = compute_loglikelihood(y, tx, w)
+
     return (w, loss)
 
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    """ Regularized logistic regression using gradient descent or SGD. """
-    raise NotImplementedError
+    """ Regularized logistic regression using GD. """
+
+    N = len(y)
+    w = initial_w
+    for n_iter in range(max_iters):
+        g = compute_log_gradient(y, tx, w)+lambda_*w/N
+        w = w - gamma * g
+        loss = compute_loglikelihood(y, tx, w)+lambda_*np.sum(w**2)/(2*N)
+
     return (w, loss)
 
 # %% Polynomials, Split data
@@ -116,7 +146,9 @@ def build_poly(x, degree):
     poly = np.ones((len(x), 1))
     for deg in range(1, degree+1):
         poly = np.c_[poly, np.power(x, deg)]
+
     return poly
+
 
 def split_data(x, y, ratio, seed=1):
     """ Split the dataset based on the split ratio."""
@@ -152,7 +184,7 @@ def build_k_indices(y, k_fold, seed):
 
 
 def cross_validation(y, x, k_indices, k, lambda_, degree):
-    """return the loss of ridge regression."""
+    """ Return the loss of ridge regression."""
 
     te_indices = k_indices[k]
     tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices]
@@ -168,7 +200,28 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
 
     loss_te = compute_mse(y_te, tx_te, w_tr)
 
-    return np.mean(np.array(loss_tr)), np.mean(np.array(loss_te))
+    return loss_tr, loss_te
+
+def cross_validation_log(y, tx, k_indices, k, lambda_, degree, intitial_w, max_iters, gamma):
+    """ Return the loss of ridge regression."""
+
+    te_indices = k_indices[k]
+    tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices]
+    x_tr = tx[tr_indices, :]
+    x_te = tx[te_indices, :]
+    y_tr = y[tr_indices]
+    y_te = y[te_indices]
+
+    tx_tr = build_poly(x_tr, degree)
+    tx_te = build_poly(x_te, degree)
+
+    initial_w = np.zeros(tx_tr.shape[1])
+
+    w_tr, loss_tr = reg_logistic_regression(y_tr, tx_tr, lambda_, initial_w, max_iters, gamma)
+
+    loss_te = compute_loglikelihood(y_te, tx_te, w_tr)
+
+    return loss_tr, loss_te
 
 # %% Addtional methods
 
@@ -187,20 +240,19 @@ def separate_factor(x, nlevels=4, column_idx = 22):
 
     return x, new_var
 
+
 def build_interaction(x):
     """ Build a matrix containing the interaction terms of the input features e.g. x1 * x2, x1 * x3, etc """
 
     comb = np.ones((x.shape[0],)).reshape(-1,1)
 
     for i in range(x.shape[1]-1):
-
         for j in range(i+1,x.shape[1]):
-
             temp = x[:,i] * x[:,j]
-
             comb = np.concatenate((comb, temp.reshape(-1,1)), axis=1)
 
     return np.delete(comb, 0, axis = 1)
+
 
 def missingness_filter(cX, cutoff = 0.5):
     """ Removes all features with more than the missingness cutoff """
@@ -212,53 +264,44 @@ def missingness_filter(cX, cutoff = 0.5):
 
     return np.delete(cX, to_remove, axis = 1), to_remove
 
-def impute_mean(x):
-    out = np.zeros(x.shape)
-    for i in range(x.shape[1]):
-        temp = x[:,i]
-        mean = np.nanmean(temp)
-        out[:,i] = np.nan_to_num(temp, nan = mean)
 
-    return out
+def impute_mean(x):
+
+    mean = np.nanmean(x, axis=0)
+    inds = np.where(np.isnan(x))
+    x[inds] = np.take(mean, inds[1])
+    return x
+
 
 def impute_median(x):
-    out = np.zeros(x.shape)
-    for i in range(x.shape[1]):
-        temp = x[:,i]
-        median = np.nanmedian(temp)
-        out[:,i] = np.nan_to_num(temp, nan = median)
 
-    return out
+    median = np.nanmedian(x, axis=0)
+    inds = np.where(np.isnan(x))
+    x[inds] = np.take(median, inds[1])
+    return x
+
 
 def impute_gaussian(x):
-    out = np.zeros(x.shape)
-    for i in range(x.shape[1]):
-        temp = x[:,i]
-        mean = np.nanmean(temp)
-        std = np.nanstd(temp)
 
-        for j in range(x.shape[0]):
-            out[j,i] = np.nan_to_num(temp[j], nan = np.random.normal(loc=mean, scale=std))
+    inds = np.where(np.isnan(x))
+    mean = np.nanmean(x, axis=0)
+    std = np.nanstd(x, axis=0)
+    x[inds] = np.take(np.random.normal(loc=mean, scale=std), inds[1])
+    return x
 
-    return out
 
 def train_data_formatting(tX, degree = 2, cutoff = 0.6, imputation = impute_mean, interaction = False):
 
     #separating out the categorical variables
-    cont_X, fac_X = separate_factor(tX)
-
+    #cont_X, fac_X = separate_factor(tX)
     #applying a missingness filter on the columns/features
-    cont_X, to_remove = missingness_filter(cont_X, cutoff)
-
+    cont_X, to_remove = missingness_filter(tX, cutoff)
     #imputing the missing data
     cont_X = imputation(cont_X)
-
     poly = build_poly(cont_X, degree)
+    #poly = np.concatenate((poly, fac_X), axis=1)
 
-    poly = np.concatenate((poly, fac_X), axis=1)
-
-    if lin_comb:
-
+    if interaction:
         inter = build_interaction(cont_X)
         return np.concatenate((poly, inter), axis=1), to_remove
 
