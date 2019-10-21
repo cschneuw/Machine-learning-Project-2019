@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """ Implementation of Machine Learning functions. """
 import numpy as np
+import matplotlib.pyplot as plt
 
 # %% Standarization and Mini-batch
 
@@ -253,9 +254,9 @@ def cross_validation_visualization(degrees, loss_tr, loss_te, lambds=[]):
     if np.array(loss_tr).shape[0] > 1 : 
         for index_degree, degree in enumerate(degrees):
             color = cmap(float(index_degree)/N)
-            plt.semilogx(lambds[mask_tr], (loss_tr[:, index_degree])[mask_tr],
+            plt.semilogx(lambds[mask_tr[:, index_degree]], loss_tr[:, index_degree][mask_tr[:, index_degree]],
                          marker=".", linewidth = 0.5, color = color, label='deg'+str(degree))
-            plt.semilogx(lambds[mask_te], (loss_te[:, index_degree])[mask_te],
+            plt.semilogx(lambds[mask_te[:, index_degree]], loss_te[:, index_degree][mask_te[:, index_degree]],
                          marker="*", linewidth = 0.5, color = color,  label='deg'+str(degree))
     if np.array(loss_tr).shape[0] == 1 : 
         plt.semilogx(np.array(degrees)[mask_tr.flatten()], 
