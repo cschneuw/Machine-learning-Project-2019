@@ -37,7 +37,7 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
 def sigmoid(t):
     """ Apply sigmoid function on t."""
 
-    return 1/(1+np.exp(-t))
+    return 2/(1+np.exp(-t))-1
 
 
 def compute_mse(y, tx, w):
@@ -200,7 +200,7 @@ def cross_validation(y, x, k_indices, k, lambda_, degree):
         
     loss_te = compute_mse(y_te, tx_te, w_tr)
     
-    return np.mean(np.array(loss_tr)), np.mean(np.array(loss_te))
+    return loss_tr, loss_te
 
 def cross_validation_log(y, tx, k_indices, k, lambda_, degree, intitial_w, max_iters, gamma):
     """ Return the loss of ridge regression."""
@@ -221,7 +221,7 @@ def cross_validation_log(y, tx, k_indices, k, lambda_, degree, intitial_w, max_i
         
     loss_te = compute_loglikelihood(y_te, tx_te, w_tr)
     
-    return np.mean(np.array(loss_tr)), np.mean(np.array(loss_te))
+    return loss_tr, loss_te
 
 # %% Addtional methods
 
