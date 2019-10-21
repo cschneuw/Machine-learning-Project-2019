@@ -223,7 +223,7 @@ def cross_validation(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_functio
     
                 if ml_function == 'lr': 
                     initial_w = np.zeros(tx_tr.shape[1])
-                    w_tr, loss_tr = logistic_regression(y_tr, tx_tr, initial_w, max_iters, gamma) 
+                    w_tr, loss_tr = logistic_regression(y_tr, tx_tr, initial_w, max_iters, gamma)
                     loss_te = compute_loglikelihood(y_te, tx_te, w_tr)
         
                 if ml_function == 'rlr':
@@ -258,12 +258,13 @@ def cross_validation_visualization(degrees, loss_tr, loss_te, lambds=[]):
                          marker=".", linewidth = 0.5, color = color, label='deg'+str(degree))
             plt.semilogx(lambds[mask_te[:, index_degree]], loss_te[:, index_degree][mask_te[:, index_degree]],
                          marker="*", linewidth = 0.5, color = color,  label='deg'+str(degree))
+        plt.xlabel("lambda")
     if np.array(loss_tr).shape[0] == 1 : 
-        plt.semilogx(np.array(degrees)[mask_tr.flatten()], 
+        plt.plot(np.array(degrees)[mask_tr.flatten()], 
                      loss_tr[mask_tr], marker=".", linewidth = 0.5, color='b', label='train')
-        plt.semilogx(np.array(degrees)[mask_te.flatten()],
+        plt.plot(np.array(degrees)[mask_te.flatten()],
                      loss_te[mask_te], marker="*", linewidth = 0.5, color='r',  label='test')
-    plt.xlabel("lambda")
+        plt.xlabel("degree")
     plt.ylabel("error")
     plt.title("cross validation")
     plt.legend(loc=1)
