@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# %% Explosratory Analysis
+# %% Exploratory Analysis
 
 def plot_feature(ids, tX, y, f, bins=20):
     """ Returns three subfirgures representing one given feature: a scatter plot of the values regarding the sample, 
@@ -98,7 +98,90 @@ def description_feature(means, std, d, n_usable, n_tot):
     text += "{}/{} = {}%".format(n_usable, n_tot, round(100*n_usable/n_tot))
     return text
 
-# %% Standarization, Remove-outliers, Mini-batch
+# %% Pre-processing Methods
+
+def separate_factor(x, nlevels=4, column_idx = 22):
+    """ Transform a column with categorical variables into different columns with binary data.
+    E.g feature = [1, 2, 1, 3] -> features = [[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]  """
+    
+    new_var = np.zeros((x.shape[0], nlevels))
+
+    for i in range(x.shape[0]):
+        for j in range(nlevels):
+            if x[i,column_idx] == j:
+                new_var[j,0] = 1
+
+    x = np.delete(x, column_idx, axis = 1)
+
+    return x, new_var
+
+
+def build_interaction(x):
+    """ Build a matrix containing the interaction terms of the input features e.g. x1 * x2, x1 * x3, etc """
+
+    comb = np.ones((x.shape[0],)).reshape(-1,1)
+
+    for i in range(x.shape[1]-1):
+        for j in range(i+1,x.shape[1]):
+            temp = x[:,i] * x[:,j]
+            comb = np.concatenate((comb, temp.reshape(-1,1)), axis=1)
+            
+    return np.delete(comb, 0, axis = 1)
+
+
+def missingness_filter(cX, cutoff = 0.5):
+    """ Removes all features with more than the missingness cutoff """
+
+    cX = np.where(cX == -999, np.nan, cX)
+    missingness = np.sum(np.isnan(cX), axis = 0)/cX.shape[0]
+
+    to_remove = np.where(missingness > cutoff)[0]
+
+    return np.delete(cX, to_remove, axis = 1), to_remove
+
+
+def impute_mean(x):
+    
+    mean = np.nanmean(x, axis=0)
+    inds = np.where(np.isnan(x))
+    x[inds] = np.take(mean, inds[1])
+    return x
+
+
+def impute_median(x):
+    
+    median = np.nanmedian(x, axis=0)
+    inds = np.where(np.isnan(x))
+    x[inds] = np.take(median, inds[1])
+    return x
+    
+    
+def impute_gaussian(x):
+    
+    inds = np.where(np.isnan(x))
+    mean = np.nanmean(x, axis=0)
+    std = np.nanstd(x, axis=0)
+    x[inds] = np.take(np.random.normal(loc=mean, scale=std), inds[1])
+    return x
+
+
+def train_data_formatting(tX, degree = 2, cutoff = 0.6, imputation = impute_mean, interaction = False):
+
+    #separating out the categorical variables
+    #cont_X, fac_X = separate_factor(tX)
+    #applying a missingness filter on the columns/features
+    cont_X, to_remove = missingness_filter(tX, cutoff)
+    #imputing the missing data
+    cont_X = imputation(cont_X)
+    poly = build_poly(cont_X, degree)
+    #poly = np.concatenate((poly, fac_X), axis=1)
+    
+    if interaction:
+        inter = build_interaction(cont_X)
+        return np.concatenate((poly, inter), axis=1), to_remove
+
+    return poly, to_remove
+
 
 def standardize(x):
     """ Standardize the original data set."""
@@ -110,30 +193,14 @@ def standardize(x):
     return x
 
 def remove_outliers(y, x, feature_index, threshold):
+    """ Removes in y and x the data points if for a list of features, 
+    the data point is higher the associated threshold."""
+    
     for f_idx, thres in zip(feature_index, threshold):
         indices = [i for (i, xi) in enumerate(x[:, f_idx]) if xi > thres]
         x = np.delete(x, indices, axis=0)
         y = np.delete(y, indices, axis=0)
     return y, x
-
-
-def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
-    """ Generate a minibatch iterator for a dataset. """
-    
-    data_size = len(y)
-
-    if shuffle:
-        shuffle_indices = np.random.permutation(np.arange(data_size))
-        shuffled_y = y[shuffle_indices]
-        shuffled_tx = tx[shuffle_indices]
-    else:
-        shuffled_y = y
-        shuffled_tx = tx
-    for batch_num in range(num_batches):
-        start_index = batch_num * batch_size
-        end_index = min((batch_num + 1) * batch_size, data_size)
-        if start_index != end_index:
-            yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
 # %% Loss functions, Gradients and Hessians
 
@@ -169,7 +236,6 @@ def compute_log_gradient(y, tx, w):
     
     h = sigmoid(tx.dot(w))
     return tx.T.dot(h-y)
-
 
 # %% Machine Learning methods
 
@@ -241,8 +307,27 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
             
     return (w, loss)
 
-# %% Polynomials, Split data
+# %% Mini-batch, Polynomials, Split data
 
+def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
+    """ Generate a minibatch iterator for a dataset. """
+    
+    data_size = len(y)
+
+    if shuffle:
+        shuffle_indices = np.random.permutation(np.arange(data_size))
+        shuffled_y = y[shuffle_indices]
+        shuffled_tx = tx[shuffle_indices]
+    else:
+        shuffled_y = y
+        shuffled_tx = tx
+    for batch_num in range(num_batches):
+        start_index = batch_num * batch_size
+        end_index = min((batch_num + 1) * batch_size, data_size)
+        if start_index != end_index:
+            yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
+
+            
 def build_poly(x, degree):
     """ Polynomial basis functions for input data x, for j=0 up to j=degree."""
     
@@ -287,7 +372,10 @@ def build_k_indices(y, k_fold, seed):
 
 
 def cross_validation(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_function = 'ls', max_iters = 0, gamma = 0.05, verbose = False):
-    """ Returns a list the train losses and test losses of the cross validation."""
+    """ Returns a list the train losses and test losses of the cross validation.
+    Set the str ml_function to 'ls', 'gd', 'sgd','ri', 'lr' or 'rlr' for the corresponding method to optimize.
+    'ls': least squares, 'gd': least squares with gradient descent, 'sgd': least squares with stochastic gradient descent,
+    'ri': ridge regression, 'lr': logistic regression, 'rlr': regularized logistic regression."""
     
     losses_tr_cv = np.empty((len(lambdas), len(degrees)))
     losses_te_cv = np.empty((len(lambdas), len(degrees)))
@@ -375,86 +463,34 @@ def cross_validation_visualization(degrees, loss_tr, loss_te, lambds=[]):
     plt.legend(loc=1)
     plt.grid(True)
 
-# %% Addtional methods
+# %% Data-separation, Data-reformation
 
-def separate_factor(x, nlevels=4, column_idx = 22):
-    """ Transform a column with categorical variables into different columns with binary data.
-    E.g feature = [1, 2, 1, 3] -> features = [[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]  """
+def separate_jet(y, tx):
+    """ Separate the dataset based on their categorial feature 'jet'.""" 
     
-    new_var = np.zeros((x.shape[0], nlevels))
-
-    for i in range(x.shape[0]):
-        for j in range(nlevels):
-            if x[i,column_idx] == j:
-                new_var[j,0] = 1
-
-    x = np.delete(x, column_idx, axis = 1)
-
-    return x, new_var
-
-
-def build_interaction(x):
-    """ Build a matrix containing the interaction terms of the input features e.g. x1 * x2, x1 * x3, etc """
-
-    comb = np.ones((x.shape[0],)).reshape(-1,1)
-
-    for i in range(x.shape[1]-1):
-        for j in range(i+1,x.shape[1]):
-            temp = x[:,i] * x[:,j]
-            comb = np.concatenate((comb, temp.reshape(-1,1)), axis=1)
-            
-    return np.delete(comb, 0, axis = 1)
-
-
-def missingness_filter(cX, cutoff = 0.5):
-    """ Removes all features with more than the missingness cutoff """
-
-    cX = np.where(cX == -999, np.nan, cX)
-    missingness = np.sum(np.isnan(cX), axis = 0)/cX.shape[0]
-
-    to_remove = np.where(missingness > cutoff)[0]
-
-    return np.delete(cX, to_remove, axis = 1), to_remove
-
-
-def impute_mean(x):
+    idx0 = np.where(tx[:, 22] == 0)
+    idx1 = np.where(tx[:, 22] == 1)
+    idx2 = np.where(tx[:, 22] >= 2)
     
-    mean = np.nanmean(x, axis=0)
-    inds = np.where(np.isnan(x))
-    x[inds] = np.take(mean, inds[1])
-    return x
-
-
-def impute_median(x):
+    y_jet0 = y[idx0]
+    tx_jet0 = tx[idx0]
+    y_jet1 = y[idx1]
+    tx_jet1 = tx[idx1]
+    y_jet2 = y[idx2]
+    tx_jet2 = tx[idx2]
     
-    median = np.nanmedian(x, axis=0)
-    inds = np.where(np.isnan(x))
-    x[inds] = np.take(median, inds[1])
-    return x
+    return idx0, y_jet0, tx_jet0, idx1, y_jet1, tx_jet1, idx2, y_jet2, tx_jet2
+
+
+def merge_jet(idx0, y_pred0, idx1, y_pred1, idx2, y_pred2):
+    """ Merge the predictions generated using the separated weights generated by training on sub-datasets."""
+    
+    y = np.empty(len(y_pred0)+len(y_pred1)+len(y_pred2))
+    y[idx0]=y_pred0
+    y[idx1]=y_pred1
+    y[idx2]=y_pred2
+    
+    return y
     
     
-def impute_gaussian(x):
     
-    inds = np.where(np.isnan(x))
-    mean = np.nanmean(x, axis=0)
-    std = np.nanstd(x, axis=0)
-    x[inds] = np.take(np.random.normal(loc=mean, scale=std), inds[1])
-    return x
-
-
-def train_data_formatting(tX, degree = 2, cutoff = 0.6, imputation = impute_mean, interaction = False):
-
-    #separating out the categorical variables
-    #cont_X, fac_X = separate_factor(tX)
-    #applying a missingness filter on the columns/features
-    cont_X, to_remove = missingness_filter(tX, cutoff)
-    #imputing the missing data
-    cont_X = imputation(cont_X)
-    poly = build_poly(cont_X, degree)
-    #poly = np.concatenate((poly, fac_X), axis=1)
-    
-    if interaction:
-        inter = build_interaction(cont_X)
-        return np.concatenate((poly, inter), axis=1), to_remove
-
-    return poly, to_remove
