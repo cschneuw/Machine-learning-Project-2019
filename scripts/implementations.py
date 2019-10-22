@@ -3,6 +3,101 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# %% Explosratory Analysis
+
+def plot_feature(ids, tX, y, f, bins=20):
+    """returns three subfirgures representing one given feature: a scatter plot of the values regarding the sample, 
+    a histogram of the apparition per value, and finally statistical information about the given distributions.
+    A color distinction is also shown regarding the label."""
+    # inputs:
+    #   - ids is the list of the index of the samples
+    #   - tX is the array of samples (for which each feature has a given value)
+    #   - y is the list of index (-1 or +1)
+    #   - f is the number of the feature we are interessed in
+    #   - bins is a parameter of the histogram
+    
+    print ('Feature {}:'.format(f))
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    
+    # Plot of the feature regarding the sample
+    col = np.where(y==1, 'b', 'orange')
+    ax[0].scatter(ids, tX[:,f], c=col)
+    ax[0].set_title('Values of feature {} regarding the sample'.format(f))
+    ax[0].set_xlabel('Samples')
+    ax[0].set_ylabel('Values')
+    
+    # Histogram plot of the apprition of a given feature value
+    tX_plus = []
+    tX_minus = []
+    for n in range(tX.shape[0]):
+        if (y[n]==1):
+            tX_plus.append(tX[n,f])
+        elif (y[n]==-1):
+            tX_minus.append(tX[n,f])
+    ax[1].hist(tX_plus, bins,alpha=0.5, label='label +1', color='b')
+    ax[1].hist(tX_minus, bins,alpha=0.5, label='label -1', color='orange')
+    ax[1].legend(loc='upper right')
+    ax[1].set_title("Histogram of factor {} distribution".format(f))
+    ax[1].set_xlabel('Values of the feature {}'.format(f))
+    ax[1].set_ylabel('Number of apparitions')
+    
+    # Table
+    means, std, d, n_usable, n_tot = compute_feature(tX_minus, tX_plus)
+    text = description_feature(means, std, d, n_usable, n_tot)
+    ax[2].text(0.5, 0.2, text, fontsize=14, ha='center')
+    plt.show()
+    
+    
+def compute_feature(list1, list2):
+    """compute some statistical information from two lists of data (of different labels) - values could be nan!"""
+    # inputs: 
+    #   - list1 corresponds to the data of the same first label
+    #   - list2 corresponds to the data of the same second label
+    # outputs: 
+    #   - means is composed of [mean of both lists together, mean of list 1, mean of list 2]
+    #   - std is composed of [std of both lists together, std of list 1, std of list 2]
+    #   - d is the discriminability of the two distributions representing the two given lists of data
+    #   - n_usable is the total number (over the two lists) of non-nan values
+    #   - n_tot is the toal number (over the two lists) of values (nan or not)
+    
+    means = [ np.nanmean(list1+list2), np.nanmean([list1]), np.nanmean([list2]) ]
+    std = [ np.nanstd(list1+list2), np.nanstd([list1]), np.nanstd([list2]) ]
+    
+    n1 = len(list1)
+    n2 = len(list2)
+    n_tot = n1+n2
+    n_usable =  np.count_nonzero(~np.isnan(list1))+np.count_nonzero(~np.isnan(list2))
+    
+    inter_class = n1*(means[1]-means[0])**2 + n2*(means[2]-means[0])**2; 
+    intra_class = (n1-1)*std[1] + (n2-1)*std[2];
+    d = inter_class / intra_class
+    
+    return means, std, d, n_usable, n_tot
+
+
+def description_feature(means, std, d, n_usable, n_tot):
+    """return a text describing the principal statistical characteristics given in argument"""
+    # inputs (same as the outputs of compute_feature):
+    #   - means is composed of [mean of both lists together, mean of list 1, mean of list 2]
+    #   - std is composed of [std of both lists together, std of list 1, std of list 2]
+    #   - d is the discriminability of the two distributions representing the two given lists of data
+    #   - n_usable is the total number (over the two lists) of non-nan values
+    #   - n_tot is the toal number (over the two lists) of values (nan or not)
+    # output:
+    #   - text
+    
+    text = "means:" + '\n'
+    text += "tot -- (-1) -- (+1)" + '\n'
+    text += "{}".format(round(means[0],2)) + " -- " + "{}".format(round(means[1],2)) + " -- " + "{}".format(round(means[2],2)) + '\n' + '\n'
+    text += "std:" + '\n'
+    text += "tot -- (-1) -- (+1)" + '\n'
+    text += "{}".format(round(std[0],2)) + " -- " + "{}".format(round(std[1],2)) + " -- " + "{}".format(round(std[2],2)) + '\n' + '\n'
+    text += "d:" + '\n'
+    text += "{}".format(d) + '\n' + '\n'
+    text += "usable n:"+ '\n'
+    text += "{}/{} = {}%".format(n_usable, n_tot, round(100*n_usable/n_tot))
+    return text
+
 # %% Standarization and Mini-batch
 
 def standardize(x):
@@ -13,6 +108,13 @@ def standardize(x):
     std_x = np.std(x)
     x = x / std_x
     return x
+
+def remove_outliers(y, x, feature_index, threshold):
+    for f_idx, thres in zip(feature_index, threshold):
+        indices = [i for (i, xi) in enumerate(x[:, f_idx]) if xi > thres]
+        x = np.delete(x, indices, axis=0)
+        y = np.delete(y, indices, axis=0)
+    return y, x
 
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
