@@ -492,5 +492,3 @@ def merge_jet(idx0, y_pred0, idx1, y_pred1, idx2, y_pred2):
     
     return y
     
-    
-    
