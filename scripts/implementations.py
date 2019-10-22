@@ -98,7 +98,7 @@ def description_feature(means, std, d, n_usable, n_tot):
     text += "{}/{} = {}%".format(n_usable, n_tot, round(100*n_usable/n_tot))
     return text
 
-# %% Standarization and Mini-batch
+# %% Standarization, Remove-outliers, Mini-batch
 
 def standardize(x):
     """ Standardize the original data set."""
