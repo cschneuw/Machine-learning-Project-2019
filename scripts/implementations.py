@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # %% Explosratory Analysis
 
 def plot_feature(ids, tX, y, f, bins=20):
-    """returns three subfirgures representing one given feature: a scatter plot of the values regarding the sample, 
+    """ Returns three subfirgures representing one given feature: a scatter plot of the values regarding the sample, 
     a histogram of the apparition per value, and finally statistical information about the given distributions.
     A color distinction is also shown regarding the label."""
     # inputs:
@@ -49,7 +49,7 @@ def plot_feature(ids, tX, y, f, bins=20):
     
     
 def compute_feature(list1, list2):
-    """compute some statistical information from two lists of data (of different labels) - values could be nan!"""
+    """ Compute some statistical information from two lists of data (of different labels) - values could be nan!"""
     # inputs: 
     #   - list1 corresponds to the data of the same first label
     #   - list2 corresponds to the data of the same second label
@@ -76,7 +76,7 @@ def compute_feature(list1, list2):
 
 
 def description_feature(means, std, d, n_usable, n_tot):
-    """return a text describing the principal statistical characteristics given in argument"""
+    """ Return a text describing the principal statistical characteristics given in argument."""
     # inputs (same as the outputs of compute_feature):
     #   - means is composed of [mean of both lists together, mean of list 1, mean of list 2]
     #   - std is composed of [std of both lists together, std of list 1, std of list 2]
