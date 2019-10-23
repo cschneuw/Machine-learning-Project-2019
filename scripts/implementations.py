@@ -2,6 +2,7 @@
 """ Implementation of Machine Learning functions. """
 import numpy as np
 import matplotlib.pyplot as plt
+from proj1_helpers import *
 
 # %% Standarization and Mini-batch
 
@@ -356,3 +357,67 @@ def train_data_formatting(tX, degree = 2, cutoff = 0.6, imputation = impute_mean
         return np.concatenate((poly, inter), axis=1), to_remove
 
     return poly, to_remove
+
+def compute_accuracy_measures(true_labels, pred_labels):
+    """Computes accuracy measures from the true and predicted labels
+    
+    if you only want one of the following measures, you can just put a _ at the corresponding outputs
+    
+    Returns:
+    --------
+    accuracy: scalar
+        accuracy of the model (tp + tn / total number of samples)
+    precision: scalar
+        precision of the model (tp/(tp + fp))
+    recall: scalar
+        recall of the model (tp/(tp + fn))
+    F1: scalar
+        model's F1 measure (2*precision*recall/(precision + recall))
+    """
+    
+    if true_labels.shape[0] != pred_labels.shape[0]:
+        print("Labels given are not of the same shape !")
+        print("True labels shape:", true_labels.shape)
+        print("Predicted labels shape:", pred_labels.shape)
+        return
+    
+    tp = 0
+    fn = 0
+    fp = 0
+    
+    correct = 0
+    
+    for true, pred in zip(true_labels, pred_labels):
+        if true == 1 and pred == 1:
+            tp = tp + 1 #true positives
+        elif true == 1 and pred == -1:
+            fn = fn + 1 #false negatives
+        elif true == -1 and pred == 1:
+            fp = fp + 1 #false positives
+            
+        if true == pred:
+            correct = correct + 1
+    
+    accuracy = correct / true_labels.shape[0]
+    precision = tp/(tp + fp)
+    recall = tp/(tp + fn)
+    
+    if (precision + recall) != 0:
+        F1 = 2*precision*recall/(precision + recall)
+    else:
+        F1 = 0
+        
+    return accuracy, precision, recall, F1
+
+def our_predict_labels(weights, data, log = False):
+    """Generates class predictions given weights, and a test data matrix"""
+    
+    if log:
+        y_pred = np.dot(data, weights)
+        y_pred[np.where(y_pred <= 0.5)] = -1
+        y_pred[np.where(y_pred > 0.5)] = 1
+        
+        return y_pred
+    
+    else:
+        return predict_labels(weights, data)
