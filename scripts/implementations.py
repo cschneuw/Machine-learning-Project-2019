@@ -294,7 +294,7 @@ def cross_validation_visualization(lambds, mse_tr, mse_te):
     plt.grid(True)
 
 
-    def bias_variance_decomposition_visualization(degrees, rmse_tr, rmse_te):
+def bias_variance_decomposition_visualization(degrees, rmse_tr, rmse_te):
     """visualize the bias variance decomposition."""
     rmse_tr_mean = np.expand_dims(np.mean(rmse_tr, axis=0), axis=0)
     rmse_te_mean = np.expand_dims(np.mean(rmse_te, axis=0), axis=0)
