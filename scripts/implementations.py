@@ -237,7 +237,7 @@ def compute_log_gradient(y, tx, w):
     h = sigmoid(tx.dot(w))
     return tx.T.dot(h-y)
 
-# %% Machine Learning methods
+# %% Machine Learning Methods
 
 def least_squares(y, tx):
     """ Least squares regression using normal equations. """
@@ -356,7 +356,7 @@ def split_data(x, y, ratio, seed=1):
     
     return x_tr, x_te, y_tr, y_te
 
-# %% Cross-validation 
+# %% Cross-validation and Bias-variance Decomposition 
 
 def build_k_indices(y, k_fold, seed):
     """ Build k indices for k-fold."""
@@ -462,6 +462,21 @@ def cross_validation_visualization(degrees, loss_tr, loss_te, lambds=[]):
     plt.title("cross validation")
     plt.legend(loc=1)
     plt.grid(True)
+    
+    
+def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te):
+    """ Visualize the bias variance decomposition."""
+    
+    loss_tr_mean = np.expand_dims(np.mean(loss_tr, axis=0), axis=0)
+    loss_te_mean = np.expand_dims(np.mean(loss_te, axis=0), axis=0)
+    plt.plot(degrees, loss_tr.T, 'b', linestyle="-", label='train', linewidth=0.3)
+    plt.plot(degrees, loss_te.T, 'r', linestyle="-", label='test', linewidth=0.3)
+    plt.plot(degrees, loss_tr_mean.T, 'b', linestyle="-", label='train', linewidth=3)
+    plt.plot(degrees, loss_te_mean.T, 'r', linestyle="-", label='test', linewidth=3)
+    plt.xlabel("degree")
+    plt.ylabel("error")
+    plt.ylim(0, 10)
+    plt.title("Bias-Variance Decomposition")
 
 # %% Data-separation, Data-reformation
 
