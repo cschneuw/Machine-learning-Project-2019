@@ -220,8 +220,14 @@ def compute_mse(y, tx, w):
 def compute_loglikelihood(y, tx, w):
     """ Compute the cost by negative log likelihood."""
     
-    h = sigmoid(tx.dot(w))
-    return -y.T.dot(np.log(h))-(1-y).T.dot(np.log(1-h))
+    #h = sigmoid(tx.dot(w))
+    #return -y.T.dot(np.log(h))-(1-y).T.dot(np.log(1-h))
+    
+    loss = 0
+    for n in range(len(y)):
+        loss +=  np.log(1+np.exp((tx[n].T).dot(w))) - y[n]*(tx[n].T).dot(w)
+        #loss +=  np.log(1+np.exp((tx[n]).dot(w))) - y[n]*(tx[n]).dot(w)
+    return loss
 
 
 def compute_gradient(y, tx, w):
@@ -235,7 +241,7 @@ def compute_log_gradient(y, tx, w):
     """ Compute the gradient of loss."""
     
     h = sigmoid(tx.dot(w))
-    return tx.T.dot(h-y)
+    return (tx.T).dot(h-y)
 
 # %% Machine Learning methods
 
@@ -289,8 +295,8 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     w = initial_w
     for n_iter in range(max_iters):
         g = compute_log_gradient(y, tx, w)
-        w = w - gamma * g
-        loss = compute_loglikelihood(y, tx, w)
+        w -= gamma * g
+    loss = compute_loglikelihood(y, tx, w)
 
     return (w, loss)
 
