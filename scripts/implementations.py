@@ -441,7 +441,7 @@ def cross_validation(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_functio
     return losses_tr_cv, losses_te_cv
 
 
-def cross_validation_visualization(degrees, loss_tr, loss_te, lambds=[]):
+def cross_validation_visualization(degrees, loss_tr, loss_te, lambds=[], y_label = "error"):
     """visualization the curves of train error and test error."""
     N = len(degrees)
     cmap = plt.get_cmap('jet_r')
@@ -461,7 +461,7 @@ def cross_validation_visualization(degrees, loss_tr, loss_te, lambds=[]):
         plt.plot(np.array(degrees)[mask_te.flatten()],
                      loss_te[mask_te], marker="*", linewidth = 0.5, color='r',  label='test')
         plt.xlabel("degree")
-    plt.ylabel("error")
+    plt.ylabel(y_label)
     plt.title("cross validation")
     plt.legend(loc=1)
     plt.grid(True)
@@ -663,3 +663,160 @@ def merge_jet(idx0, y_pred0, idx1, y_pred1, idx2, y_pred2):
     y[idx2]=y_pred2
 
     return y
+
+def standardize_train(x):
+    
+    mean_x = np.mean(x, axis = 0)
+    std_x = np.std(x, axis = 0)
+    
+    std_x = np.where(std_x == 0, 1, std_x)
+    
+    x = x - mean_x
+    
+    x = x / std_x
+        
+    return x, mean_x, std_x
+
+def standardize_test(x, tr_mean, tr_std):
+    
+    x = x - tr_mean
+
+    x = x / tr_std
+    return x
+
+def standardize_both(x_train, x_test):
+    
+    std_train_x, mean_x, std_x = standardize_train(x_train)
+    std_test_x = standardize_test(x_test, mean_x, std_x)
+    
+    return std_train_x, std_test_x
+
+def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_function = 'ls', max_iters = 0, gamma = 0.05, verbose = False, interaction = False):
+    """ Returns a list the train losses and test losses of the cross validation."""
+
+    losses_tr_cv = np.empty((len(lambdas), len(degrees)))
+    losses_te_cv = np.empty((len(lambdas), len(degrees)))
+    acc_tr_cv = np.empty((len(lambdas), len(degrees)))
+    acc_te_cv = np.empty((len(lambdas), len(degrees)))
+    pre_tr_cv = np.empty((len(lambdas), len(degrees)))
+    pre_te_cv = np.empty((len(lambdas), len(degrees)))
+    rec_tr_cv = np.empty((len(lambdas), len(degrees)))
+    rec_te_cv = np.empty((len(lambdas), len(degrees)))
+    f1_tr_cv = np.empty((len(lambdas), len(degrees)))
+    f1_te_cv = np.empty((len(lambdas), len(degrees)))
+
+    for index_lambda, lambda_ in enumerate(lambdas):
+        for index_degree, degree in enumerate(degrees):
+            losses_tr = np.empty(k_fold)
+            losses_te = np.empty(k_fold)
+            accuracies_tr = np.empty(k_fold)
+            accuracies_te = np.empty(k_fold)
+            precisions_tr = np.empty(k_fold)
+            precisions_te = np.empty(k_fold)
+            recalls_tr = np.empty(k_fold)
+            recalls_te = np.empty(k_fold)
+            F1s_tr = np.empty(k_fold)
+            F1s_te = np.empty(k_fold)
+            
+            for k in range(k_fold):
+                loss_tr = 0
+                loss_te = 0
+                te_indices = k_indices[k]
+                tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices]
+                
+                x_tr = x[tr_indices, :].copy()
+                x_te = x[te_indices, :].copy()
+                
+                x_tr, x_te = standardize_both(x_tr, x_te)
+                
+                
+                y_tr = y[tr_indices]
+                y_te = y[te_indices]
+                
+                poly_tr = build_poly(x_tr, np.int(degree))
+                poly_te = build_poly(x_te, np.int(degree))
+                
+                if interaction:
+                    int_tr = build_interaction(x_tr)
+                    int_te = build_interaction(x_te)
+                    tx_tr = np.concatenate((poly_tr, int_tr), axis=1)
+                    tx_te = np.concatenate((poly_te, int_te), axis=1)
+                else:                    
+                    tx_tr = poly_tr
+                    tx_te = poly_te
+                
+
+                if ml_function == 'gd':
+                    initial_w = np.zeros(tx_tr.shape[1])
+                    w_tr, loss_tr = least_squares_GD(y_tr, tx_tr, initial_w, max_iters, gamma)
+                    loss_te = compute_mse(y_te, tx_te, w_tr)
+
+                if ml_function == 'sgd' :
+                    initial_w = np.zeros(tx_tr.shape[1])
+                    w_tr, loss_tr = least_squares_SGD(y_tr, tx_tr, initial_w, max_iters, gamma)
+                    loss_te = compute_mse(y_te, tx_te, w_tr)
+
+                if ml_function == 'ri':
+                    w_tr, loss_tr = ridge_regression(y_tr, tx_tr, lambda_)
+                    loss_te = compute_mse(y_te, tx_te, w_tr)
+                    
+                #print("After ridge")
+
+                if ml_function == 'lr':
+                    initial_w = np.zeros(tx_tr.shape[1])
+                    w_tr, loss_tr = logistic_regression(y_tr, tx_tr, initial_w, max_iters, gamma)
+                    loss_te = compute_loglikelihood(y_te, tx_te, w_tr)
+
+                if ml_function == 'rlr':
+                    initial_w = np.zeros(tx_tr.shape[1])
+                    w_tr, loss_tr = reg_logistic_regression(y_tr, tx_tr, lambda_, initial_w, max_iters, gamma)
+                    loss_te = compute_loglikelihood(y_te, tx_te, w_tr)
+
+                losses_tr[k] = loss_tr
+                losses_te[k] = loss_te
+                
+                
+                if np.isnan(w_tr).any():
+                    print(np.sum(np.isnan(w_tr), axis = 0)/w_tr.shape[0], " weights are nan \n")
+                
+                if ml_function == 'lr' or ml_function == 'rlr':
+                    y_tr_pred = our_predict_labels(w_tr, tx_tr, True)
+                    y_te_pred = our_predict_labels(w_tr, tx_te, True)
+                else:
+                    y_tr_pred = our_predict_labels(w_tr, tx_tr)
+                    y_te_pred = our_predict_labels(w_tr, tx_te)
+                    
+                
+                
+                accuracies_tr[k], precisions_tr[k], recalls_tr[k], F1s_tr[k] = compute_accuracy_measures(y_tr, y_tr_pred)
+                accuracies_te[k], precisions_te[k], recalls_te[k], F1s_te[k] = compute_accuracy_measures(y_te, y_te_pred)
+
+
+            if ml_function == 'gd' or 'sgd' or 'ri':
+                losses_tr_cv[index_lambda][index_degree] = np.mean(np.sqrt(2*losses_tr))
+                losses_te_cv[index_lambda][index_degree] = np.mean(np.sqrt(2*losses_te))
+
+            if ml_function == 'lr' or 'rlr':
+                losses_tr_cv[index_lambda][index_degree] = np.mean(losses_tr)
+                losses_te_cv[index_lambda][index_degree] = np.mean(losses_te)
+                
+            acc_tr_cv[index_lambda][index_degree] = np.mean(accuracies_tr)
+            acc_te_cv[index_lambda][index_degree] = np.mean(accuracies_te)
+            pre_tr_cv[index_lambda][index_degree] = np.mean(precisions_tr)
+            pre_te_cv[index_lambda][index_degree] = np.mean(precisions_te)
+            rec_tr_cv[index_lambda][index_degree] = np.mean(recalls_tr)
+            rec_te_cv[index_lambda][index_degree] = np.mean(recalls_te)
+            f1_tr_cv[index_lambda][index_degree] = np.mean(F1s_tr)
+            f1_te_cv[index_lambda][index_degree] = np.mean(F1s_te)
+            
+            if verbose == True:
+                print('Completed degree '+str(degree)+'/'+str(len(degrees)),end="\r",flush=True)
+
+        if verbose == True:
+            print('\n Completed lambda '+str(index_lambda+1)+'/'+str(len(lambdas)) + '\n',end="\r",flush=True)
+            
+    acc_measures = {"acc_tr": acc_tr_cv, "acc_te": acc_te_cv, "pre_tr": pre_tr_cv, "pre_te": pre_te_cv,
+        "rec_tr": rec_tr_cv, "rec_te": rec_te_cv, "f1_tr": f1_tr_cv, "f1_te": f1_te_cv}
+
+    return losses_tr_cv, losses_te_cv, acc_measures
+
