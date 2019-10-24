@@ -693,6 +693,18 @@ def standardize_both(x_train, x_test):
 
 def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_function = 'ls', max_iters = 0, gamma = 0.05, verbose = False, interaction = False):
     """ Returns a list the train losses and test losses of the cross validation."""
+    
+    n_features = x.shape[1]
+    comb = np.ones((x.shape[0],)).reshape(-1,1)
+    poly = np.delete(build_poly(x, degrees[-1]), 0, axis = 1)
+    
+    if interaction:
+        inter = build_interaction(x)        
+        poly = np.concatenate((inter, poly), axis=1)
+        
+    x = np.concatenate((comb, poly), axis=1)
+    
+    print("Finished preparing data for cross-validation \n")
 
     losses_tr_cv = np.empty((len(lambdas), len(degrees)))
     losses_te_cv = np.empty((len(lambdas), len(degrees)))
@@ -723,29 +735,20 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
                 loss_te = 0
                 te_indices = k_indices[k]
                 tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices]
+                    
+                if interaction:
+                    degree_idx = (degree * n_features) + inter.shape[1] + 1
+                else:
+                    degree_idx = degree * n_features + 1
                 
-                x_tr = x[tr_indices, :].copy()
-                x_te = x[te_indices, :].copy()
+                x_tr = x[tr_indices, 0:degree_idx].copy()
+                x_te = x[te_indices, 0:degree_idx].copy()
                 
-                x_tr, x_te = standardize_both(x_tr, x_te)
-                
+                tx_tr, tx_te = standardize_both(x_tr, x_te)
                 
                 y_tr = y[tr_indices]
                 y_te = y[te_indices]
                 
-                poly_tr = build_poly(x_tr, np.int(degree))
-                poly_te = build_poly(x_te, np.int(degree))
-                
-                if interaction:
-                    int_tr = build_interaction(x_tr)
-                    int_te = build_interaction(x_te)
-                    tx_tr = np.concatenate((poly_tr, int_tr), axis=1)
-                    tx_te = np.concatenate((poly_te, int_te), axis=1)
-                else:                    
-                    tx_tr = poly_tr
-                    tx_te = poly_te
-                
-
                 if ml_function == 'gd':
                     initial_w = np.zeros(tx_tr.shape[1])
                     w_tr, loss_tr = least_squares_GD(y_tr, tx_tr, initial_w, max_iters, gamma)
@@ -810,7 +813,7 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
             f1_te_cv[index_lambda][index_degree] = np.mean(F1s_te)
             
             if verbose == True:
-                print('Completed degree '+str(degree)+'/'+str(len(degrees)),end="\r",flush=True)
+                print('Completed degree '+str(index_degree+1)+'/'+str(len(degrees)),end="\r",flush=True)
 
         if verbose == True:
             print('\n Completed lambda '+str(index_lambda+1)+'/'+str(len(lambdas)) + '\n',end="\r",flush=True)
@@ -819,4 +822,3 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
         "rec_tr": rec_tr_cv, "rec_te": rec_te_cv, "f1_tr": f1_tr_cv, "f1_te": f1_te_cv}
 
     return losses_tr_cv, losses_te_cv, acc_measures
-
