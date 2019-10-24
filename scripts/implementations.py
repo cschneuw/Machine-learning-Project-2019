@@ -173,14 +173,14 @@ def train_data_formatting(tX, degree = 2, cutoff = 0.6, imputation = impute_mean
     cont_X, to_remove = missingness_filter(tX, cutoff)
     #imputing the missing data
     cont_X = imputation(cont_X)
-    poly = build_poly(cont_X, degree)
+    #poly = build_poly(cont_X, degree)
     #poly = np.concatenate((poly, fac_X), axis=1)
     
     if interaction:
         inter = build_interaction(cont_X)
         return np.concatenate((poly, inter), axis=1), to_remove
 
-    return poly, to_remove
+    return cont_X, to_remove
 
 
 def standardize(x):
