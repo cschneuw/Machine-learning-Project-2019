@@ -242,6 +242,8 @@ def compute_log_gradient(y, tx, w):
     
     h = sigmoid(tx.dot(w))
     return (tx.T).dot(h-y)
+    #h = sigmoid((tx.T).dot(w))
+    #return tx.dot(h-y)
 
 # %% Machine Learning methods
 
@@ -425,16 +427,16 @@ def cross_validation(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_functio
                 if ml_function == 'rlr':
                     initial_w = np.zeros(tx_tr.shape[1])
                     w_tr, loss_tr = reg_logistic_regression(y_tr, tx_tr, lambda_, initial_w, max_iters, gamma) 
-                    loss_te = compute_loglikelihood(y_te, tx_te, w_tr)   
+                    loss_te = compute_loglikelihood(y_te, tx_te, w_tr) 
                 
                 losses_tr[k] = loss_tr
                 losses_te[k] = loss_te
                 
-            if ml_function == 'gd' or 'sgd' or 'ri':
+            if ml_function == ('gd' or 'sgd' or 'ri'):
                 losses_tr_cv[index_lambda][index_degree] = np.mean(np.sqrt(2*losses_tr))
                 losses_te_cv[index_lambda][index_degree] = np.mean(np.sqrt(2*losses_te))
                 
-            if ml_function == 'lr' or 'rlr':
+            if ml_function == ('lr' or 'rlr'):
                 losses_tr_cv[index_lambda][index_degree] = np.mean(losses_tr)
                 losses_te_cv[index_lambda][index_degree] = np.mean(losses_te)
             
