@@ -30,3 +30,4 @@ data/submissionrlrdeg1.csv
 *.csv
 *.ipynb
 *.pyc
+*__pycache__*
