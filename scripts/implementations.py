@@ -333,7 +333,9 @@ def build_poly(x, degree):
     
     poly = np.ones((len(x), 1))
     for deg in range(1, degree+1):
-        poly = np.c_[poly, np.power(x, deg)]
+        n_poly = np.power(x, deg)
+        n_poly = np.apply_along_axis(standardize, 1, n_poly)
+        poly = np.c_[poly, n_poly]
         
     return poly
 
