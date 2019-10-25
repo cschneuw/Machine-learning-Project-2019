@@ -19,21 +19,21 @@ To get the exact results run the "run.py" file.
 ### Principal functions in run.py
 Packages used : numpy, matplotlib.
 
-###### Load data
+##### Load data
 
-###### Data-preprocessing
+##### Data-preprocessing
 
-###### Process data and build model
+##### Process data and build model
 
-###### Apply Polynomial Expansion 
+##### Apply Polynomial Expansion 
 
-###### Ridge regression
+##### Ridge regression
 
-###### Compute label predictions
+##### Compute label predictions
 
-###### Merge subsets predictions
+##### Merge subsets predictions
 
-###### Create submission file
+##### Create submission file
 
 
 
