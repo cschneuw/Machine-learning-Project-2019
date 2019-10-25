@@ -130,7 +130,7 @@ def build_interaction(x):
 
 
 def missingness_filter(cX, cutoff = 0.5):
-    """ Removes all features with more than the missingness cutoff """
+    """ Removes all features with a larger proportion of missing data than the cutoff threshold. """
 
     cX = np.where(cX == -999, np.nan, cX)
     missingness = np.sum(np.isnan(cX), axis = 0)/cX.shape[0]
@@ -141,6 +141,7 @@ def missingness_filter(cX, cutoff = 0.5):
 
 
 def impute_mean(x):
+    """ Replaces missing datapoints in x by the mean value of non missing data."""
     
     mean = np.nanmean(x, axis=0)
     inds = np.where(np.isnan(x))
@@ -149,6 +150,7 @@ def impute_mean(x):
 
 
 def impute_median(x):
+    """ Replaces missing datapoints in x by the median of non missing data."""
     
     median = np.nanmedian(x, axis=0)
     inds = np.where(np.isnan(x))
@@ -157,6 +159,7 @@ def impute_median(x):
     
     
 def impute_gaussian(x):
+    """ Replaces missing datapoints in x by a random value in a gaussian distribution."""
     
     inds = np.where(np.isnan(x))
     mean = np.nanmean(x, axis=0)
@@ -480,7 +483,7 @@ def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te):
     plt.ylim(0, 10)
     plt.title("Bias-Variance Decomposition")
 
-# %% Data-separation, Data-reformation
+# %% Data jet subsets handling
 
 def separate_jet(y, tx):
     """ Separate the dataset based on their categorial feature 'jet'.""" 
@@ -495,6 +498,11 @@ def separate_jet(y, tx):
     tx_jet1 = tx[idx1]
     y_jet2 = y[idx2]
     tx_jet2 = tx[idx2]
+    
+    # remove categorical data column
+    tx_jet0 = np.delete(tx_jet0, 22, axis=1)
+    tx_jet1 = np.delete(tx_jet1, 22, axis=1)
+    tx_jet2 = np.delete(tx_jet2, 22, axis=1)
     
     return idx0, y_jet0, tx_jet0, idx1, y_jet1, tx_jet1, idx2, y_jet2, tx_jet2
 
