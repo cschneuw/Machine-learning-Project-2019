@@ -131,7 +131,7 @@ def build_interaction(x):
 
 
 def missingness_filter(cX, cutoff = 0.5):
-    """ Removes all features with more than the missingness cutoff """
+    """ Removes all features with a larger proportion of missing data than the cutoff threshold. """
 
     cX = np.where(cX == -999, np.nan, cX)
     missingness = np.sum(np.isnan(cX), axis = 0)/cX.shape[0]
@@ -142,6 +142,7 @@ def missingness_filter(cX, cutoff = 0.5):
 
 
 def impute_mean(x):
+    """ Replaces missing datapoints in x by the mean value of non missing data."""
 
     mean = np.nanmean(x, axis=0)
     inds = np.where(np.isnan(x))
@@ -150,6 +151,7 @@ def impute_mean(x):
 
 
 def impute_median(x):
+    """ Replaces missing datapoints in x by the median of non missing data."""
 
     median = np.nanmedian(x, axis=0)
     inds = np.where(np.isnan(x))
@@ -158,6 +160,7 @@ def impute_median(x):
 
 
 def impute_gaussian(x):
+    """ Replaces missing datapoints in x by a random value in a gaussian distribution."""
 
     inds = np.where(np.isnan(x))
     mean = np.nanmean(x, axis=0)
@@ -336,7 +339,9 @@ def build_poly(x, degree):
 
     poly = np.ones((len(x), 1))
     for deg in range(1, degree+1):
-        poly = np.c_[poly, np.power(x, deg)]
+        n_poly = np.power(x, deg)
+        #n_poly = np.apply_along_axis(standardize, 1, n_poly)
+        poly = np.c_[poly, n_poly]
 
     return poly
 
@@ -531,7 +536,7 @@ def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te):
     plt.ylim(0, 10)
     plt.title("Bias-Variance Decomposition")
 
-# %% Data-separation, Data-reformation
+# %% Data jet subsets handling
 
 def impute_median(x):
 
@@ -562,6 +567,11 @@ def separate_jet(y, tx):
     tx_jet1 = tx[idx1]
     y_jet2 = y[idx2]
     tx_jet2 = tx[idx2]
+
+    # remove categorical data column
+    tx_jet0 = np.delete(tx_jet0, 22, axis=1)
+    tx_jet1 = np.delete(tx_jet1, 22, axis=1)
+    tx_jet2 = np.delete(tx_jet2, 22, axis=1)
 
     return idx0, y_jet0, tx_jet0, idx1, y_jet1, tx_jet1, idx2, y_jet2, tx_jet2
 
@@ -665,45 +675,45 @@ def merge_jet(idx0, y_pred0, idx1, y_pred1, idx2, y_pred2):
     return y
 
 def standardize_train(x):
-    
+
     mean_x = np.mean(x, axis = 0)
     std_x = np.std(x, axis = 0)
-    
+
     std_x = np.where(std_x == 0, 1, std_x)
-    
+
     x = x - mean_x
-    
+
     x = x / std_x
-        
+
     return x, mean_x, std_x
 
 def standardize_test(x, tr_mean, tr_std):
-    
+
     x = x - tr_mean
 
     x = x / tr_std
     return x
 
 def standardize_both(x_train, x_test):
-    
+
     std_train_x, mean_x, std_x = standardize_train(x_train)
     std_test_x = standardize_test(x_test, mean_x, std_x)
-    
+
     return std_train_x, std_test_x
 
 def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_function = 'ls', max_iters = 0, gamma = 0.05, verbose = False, interaction = False):
     """ Returns a list the train losses and test losses of the cross validation."""
-    
+
     n_features = x.shape[1]
     comb = np.ones((x.shape[0],)).reshape(-1,1)
     poly = np.delete(build_poly(x, degrees[-1]), 0, axis = 1)
-    
+
     if interaction:
-        inter = build_interaction(x)        
+        inter = build_interaction(x)
         poly = np.concatenate((inter, poly), axis=1)
-        
+
     x = np.concatenate((comb, poly), axis=1)
-    
+
     print("Finished preparing data for cross-validation \n")
 
     losses_tr_cv = np.empty((len(lambdas), len(degrees)))
@@ -729,26 +739,26 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
             recalls_te = np.empty(k_fold)
             F1s_tr = np.empty(k_fold)
             F1s_te = np.empty(k_fold)
-            
+
             for k in range(k_fold):
                 loss_tr = 0
                 loss_te = 0
                 te_indices = k_indices[k]
                 tr_indices = [ind for split in k_indices for ind in split if ind not in te_indices]
-                    
+
                 if interaction:
                     degree_idx = (degree * n_features) + inter.shape[1] + 1
                 else:
                     degree_idx = degree * n_features + 1
-                
+
                 x_tr = x[tr_indices, 0:degree_idx].copy()
                 x_te = x[te_indices, 0:degree_idx].copy()
-                
+
                 tx_tr, tx_te = standardize_both(x_tr, x_te)
-                
+
                 y_tr = y[tr_indices]
                 y_te = y[te_indices]
-                
+
                 if ml_function == 'gd':
                     initial_w = np.zeros(tx_tr.shape[1])
                     w_tr, loss_tr = least_squares_GD(y_tr, tx_tr, initial_w, max_iters, gamma)
@@ -762,7 +772,7 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
                 if ml_function == 'ri':
                     w_tr, loss_tr = ridge_regression(y_tr, tx_tr, lambda_)
                     loss_te = compute_mse(y_te, tx_te, w_tr)
-                    
+
                 #print("After ridge")
 
                 if ml_function == 'lr':
@@ -777,20 +787,20 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
 
                 losses_tr[k] = loss_tr
                 losses_te[k] = loss_te
-                
-                
+
+
                 if np.isnan(w_tr).any():
                     print(np.sum(np.isnan(w_tr), axis = 0)/w_tr.shape[0], " weights are nan \n")
-                
+
                 if ml_function == 'lr' or ml_function == 'rlr':
                     y_tr_pred = our_predict_labels(w_tr, tx_tr, True)
                     y_te_pred = our_predict_labels(w_tr, tx_te, True)
                 else:
                     y_tr_pred = our_predict_labels(w_tr, tx_tr)
                     y_te_pred = our_predict_labels(w_tr, tx_te)
-                    
-                
-                
+
+
+
                 accuracies_tr[k], precisions_tr[k], recalls_tr[k], F1s_tr[k] = compute_accuracy_measures(y_tr, y_tr_pred)
                 accuracies_te[k], precisions_te[k], recalls_te[k], F1s_te[k] = compute_accuracy_measures(y_te, y_te_pred)
 
@@ -802,7 +812,7 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
             if ml_function == 'lr' or 'rlr':
                 losses_tr_cv[index_lambda][index_degree] = np.mean(losses_tr)
                 losses_te_cv[index_lambda][index_degree] = np.mean(losses_te)
-                
+
             acc_tr_cv[index_lambda][index_degree] = np.mean(accuracies_tr)
             acc_te_cv[index_lambda][index_degree] = np.mean(accuracies_te)
             pre_tr_cv[index_lambda][index_degree] = np.mean(precisions_tr)
@@ -811,13 +821,13 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
             rec_te_cv[index_lambda][index_degree] = np.mean(recalls_te)
             f1_tr_cv[index_lambda][index_degree] = np.mean(F1s_tr)
             f1_te_cv[index_lambda][index_degree] = np.mean(F1s_te)
-            
+
             if verbose == True:
                 print('Completed degree '+str(index_degree+1)+'/'+str(len(degrees)),end="\r",flush=True)
 
         if verbose == True:
             print('\n Completed lambda '+str(index_lambda+1)+'/'+str(len(lambdas)) + '\n',end="\r",flush=True)
-            
+
     acc_measures = {"acc_tr": acc_tr_cv, "acc_te": acc_te_cv, "pre_tr": pre_tr_cv, "pre_te": pre_te_cv,
         "rec_tr": rec_tr_cv, "rec_te": rec_te_cv, "f1_tr": f1_tr_cv, "f1_te": f1_te_cv}
 
