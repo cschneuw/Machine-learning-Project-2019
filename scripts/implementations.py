@@ -152,11 +152,15 @@ def impute_mean(x):
 
 def impute_median(x):
     """ Replaces missing datapoints in x by the median of non missing data."""
-
+    
+    print("Haha")
+    
     median = np.nanmedian(x, axis=0)
+    m = np.nanmedian(x, axis=0)
     inds = np.where(np.isnan(x))
     x[inds] = np.take(median, inds[1])
-    return x
+    
+    return x, m
 
 
 def impute_gaussian(x):
@@ -710,6 +714,7 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
 
     if interaction:
         inter = build_interaction(x)
+        print("Added {} interaction features" .format(inter.shape[1]))
         poly = np.concatenate((inter, poly), axis=1)
 
     x = np.concatenate((comb, poly), axis=1)
@@ -832,3 +837,66 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
         "rec_tr": rec_tr_cv, "rec_te": rec_te_cv, "f1_tr": f1_tr_cv, "f1_te": f1_te_cv}
 
     return losses_tr_cv, losses_te_cv, acc_measures
+
+def build_poly_inter(x, degree, interaction = False):
+    
+    n_features = x.shape[1]
+    comb = np.ones((x.shape[0],)).reshape(-1,1)
+    poly = np.delete(build_poly(x, degree), 0, axis = 1)
+
+    if interaction:
+        inter = build_interaction(x)
+        poly = np.concatenate((inter, poly), axis=1)
+
+    x = np.concatenate((comb, poly), axis=1)
+    
+    return x
+    
+
+def build_final_model(y, x, degree, lambda_, ml_function = 'ri', gamma = 0.05, interaction = False):
+    
+    x = build_poly_inter(x, degree, interaction)
+    
+    tx, mean_x, std_x = standardize_train(x)
+    
+    data_measures = {"mean": mean_x,
+                     "std": std_x}
+    
+    if ml_function == 'gd':
+        initial_w = np.zeros(tx.shape[1])
+        w, loss = least_squares_GD(y, tx, initial_w, max_iters, gamma)
+
+    if ml_function == 'sgd' :
+        initial_w = np.zeros(tx.shape[1])
+        w, loss = least_squares_SGD(y, tx, initial_w, max_iters, gamma)
+
+    if ml_function == 'ri':
+        w, loss = ridge_regression(y, tx, lambda_)
+        
+
+    if ml_function == 'lr':
+        initial_w = np.zeros(tx.shape[1])
+        w, loss = logistic_regression(y, tx, initial_w, max_iters, gamma)
+
+    if ml_function == 'rlr':
+        initial_w = np.zeros(tx.shape[1])
+        w, loss = reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma)
+        
+    if ml_function == 'lr' or ml_function == 'rlr':
+        y_pred = our_predict_labels(w, tx, True)
+    else:
+        y_pred = our_predict_labels(w, tx)
+
+        
+    accuracy, precision, recall, F1 = compute_accuracy_measures(y, y_pred)
+    
+    acc_measures = {"acc": accuracy, "pre": precision, "rec": recall, "f1": F1}
+    
+    return w, loss, acc_measures, data_measures
+
+def impute_median_from_train(x, median):
+    """ Replaces missing datapoints in x by the median of non missing data."""
+
+    inds = np.where(np.isnan(x))
+    x[inds] = np.take(median, inds[1])
+    return x
