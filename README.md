@@ -19,7 +19,30 @@ Packages used : numpy, matplotlib.
 Contain functions used to load the data and generate a CSV submission file.
 
 #### `implementations.py`
-Contain the 6 regression methods needed for this project
+Contains all the methods used in this project.
+
+##### Exploratory Analysis
+- **`plot_feature`**: Scatter plot, histogram and statistical information on a specified feature
+- **`compute_feature`**: Statistics from two datasets
+- **`description_feature`**: Text descrption of principal statistics
+##### Pre-processing
+- **`missingness_filter`**: Remove features with missing data higher than a threshold
+- **`impute_mean`**: Compute feature mean
+- **`impute_median`**: Compute feature media
+- **`impute_gaussian`**: Compute datapoints in a gaussian distribution
+- **`train_data_formatting`**: Replace missing data by impute_function 
+- **`standardize`**: Standarize features
+- **`remove_outliers`**: Remove datapoints if value is higher than a threshold
+##### Data jet subsets handling
+- **`separate_jet`**: Separate categorical data  based on 'jet' value
+- **`merge_jet`**: Merge the predictions from different data subsetss
+##### Loss functions, Gradients
+- **`sigmoid`**: Sigmoid function 
+- **`compute_mse`**: Mean square error
+- **`compute_loglikelihood`**: Negative loglikelihood
+- **`compute_gradient`**: Gradient of least square loss function
+- **`compute_log_gradient`**: Gradient of negative loglikelihood loss function 
+##### Machine learning methods
 - **`least_squares_gd`**: Linear regression using gradient descent
 - **`least_squares_sgd`**: Linear regression using stochastic gradient descent
 - **`least_squares`**: Least squares regression using normal equations
@@ -27,6 +50,16 @@ Contain the 6 regression methods needed for this project
 - **`logistic_regression`**: using stochastic gradient descent
 - **`reg_logistic_regression`**: Regularized logistic regression
 As well as additional methods used for code optimization. 
+##### Mini-batch, Polynomials, Split data
+- **`batch_iter`**: Mini-batch creation for stochastic gradient descent
+- **`build_poly`**: Compute polynomial data augmentation
+- **`build_interaction`**: Compute feature interaction terms for data augmentation
+- **`split_data`**: Split data in test and train sets
+##### Cross-validation and Bias-variance Decomposition
+- **`build_k_indices`**: Build indices for cross-validation
+- **`cross_validation`**: Computes cross-validation for all methods 
+- **`cross_validation_visualization`**: Plots cross-validation results
+- **`bias_variance_decomposition_visualization`**: Plots biais-variance analysis
 
 #### `run.py`
 Script that generates the exact CSV file submitted on Kaggle.
@@ -36,24 +69,6 @@ Python notebook used for tests during this project.
 
 ## Run
 To get the exact results run the `run.py` file.
-###### Load data
-`y, tX, ids = load_csv_data(data_path)`
-###### Data-preprocessing
-`y, tX = `**`remove_outliers`**`(y, tX, [features], [thresholds])`
-###### Process data and build model
-`idx_jet0, y_jet0, tX_jet0, idx_jet1, y_jet1, tX_jet1, idx_jet2, y_jet2, tX_jet2 = `**`separate_jet`**`(y, tX)
-tX, rmX = `**`train_data_formatting`**`(tX, degree = 1, cutoff = 0.95, imputation = impute_median, interaction = False)
-tX = `**`np.apply_along_axis`**`(standardize, 1, tX)`
-###### Apply Polynomial Expansion 
-`tX_poly = `**`build_poly`**`(tX, degree)`
-###### Ridge regression
-`w_ri, mse_ri = `**`ridge_regression`**`(y, tX_poly, lambda_)`
-###### Compute label predictions
-`y_pred = `**`predict_labels`**`(w_ri, tX_poly)`
-###### Merge subsets predictions
-`y_pred = `**`merge_jet`**`(idx_jet0, y_pred0, idx_jet1, y_pred1, idx_jet2, y_pred2)`
-###### Create submission file
-**`create_csv_submission`**`(ids_test, y_pred, '../data/final_submission.csv')`
 
 
 Overleaf link to Report : https://www.overleaf.com/project/5d93529398083800016c9001.
