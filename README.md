@@ -76,7 +76,7 @@ As well as additional methods used for code optimization.
 - **`make prediction`**: Return predicted labels with trained weights
 
 #### `run.py`
-Script that generates the exact CSV file submitted on Kaggle.
+Script that generates the exact CSV file submitted on AIcrowd.
 
 #### `project1.ipynb`
 Python notebook used for tests during this project.
