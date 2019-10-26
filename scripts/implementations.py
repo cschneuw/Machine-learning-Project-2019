@@ -546,7 +546,7 @@ def impute_median(x):
     median = np.nanmedian(x, axis=0)
     inds = np.where(np.isnan(x))
     x[inds] = np.take(median, inds[1])
-    return x
+    return x, median
 
 
 def impute_gaussian(x):
