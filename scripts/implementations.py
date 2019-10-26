@@ -153,14 +153,13 @@ def impute_mean(x):
 def impute_median(x):
     """ Replaces missing datapoints in x by the median of non missing data."""
     
-    print("Haha")
+    print("hello world")
     
     median = np.nanmedian(x, axis=0)
-    m = np.nanmedian(x, axis=0)
     inds = np.where(np.isnan(x))
     x[inds] = np.take(median, inds[1])
     
-    return x, m
+    return x
 
 
 def impute_gaussian(x):
