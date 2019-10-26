@@ -546,6 +546,13 @@ def impute_median(x):
     median = np.nanmedian(x, axis=0)
     inds = np.where(np.isnan(x))
     x[inds] = np.take(median, inds[1])
+    return x
+
+def impute_median_train(x):
+
+    median = np.nanmedian(x, axis=0)
+    inds = np.where(np.isnan(x))
+    x[inds] = np.take(median, inds[1])
     return x, median
 
 
@@ -899,3 +906,14 @@ def impute_median_from_train(x, median):
     inds = np.where(np.isnan(x))
     x[inds] = np.take(median, inds[1])
     return x
+
+def vis_cv_acc(degrees,lambdas,acc_measures):
+    plt.figure(figsize=(10,10))
+    plt.subplot(2, 2, 1)
+    cross_validation_visualization(degrees, acc_measures["acc_tr"], acc_measures["acc_te"], lambdas, "accuracy")
+    plt.subplot(2, 2, 2)
+    cross_validation_visualization(degrees, acc_measures["pre_tr"], acc_measures["pre_te"], lambdas, "precision")
+    plt.subplot(2, 2, 3)
+    cross_validation_visualization(degrees, acc_measures["rec_tr"], acc_measures["rec_te"], lambdas, "recall")
+    plt.subplot(2, 2, 4)
+    cross_validation_visualization(degrees, acc_measures["f1_tr"], acc_measures["f1_te"], lambdas, "F1")
