@@ -131,16 +131,6 @@ def impute_median(x):
     return x
 
 
-def impute_gaussian(x):
-    """ Replaces missing datapoints in x by a random value in a gaussian distribution."""
-
-    inds = np.where(np.isnan(x))
-    mean = np.nanmean(x, axis=0)
-    std = np.nanstd(x, axis=0)
-    x[inds] = np.take(np.random.normal(loc=mean, scale=std), inds[1])
-    return x
-
-
 def impute_median_train(x):
 
     median = np.nanmedian(x, axis=0)
@@ -154,6 +144,16 @@ def impute_median_from_train(x, median):
 
     inds = np.where(np.isnan(x))
     x[inds] = np.take(median, inds[1])
+    return x
+
+
+def impute_gaussian(x):
+    """ Replaces missing datapoints in x by a random value in a gaussian distribution."""
+
+    inds = np.where(np.isnan(x))
+    mean = np.nanmean(x, axis=0)
+    std = np.nanstd(x, axis=0)
+    x[inds] = np.take(np.random.normal(loc=mean, scale=std), inds[1])
     return x
 
 
@@ -254,22 +254,6 @@ def train_data_formatting(tX, degree = 2, cutoff = 0.6, imputation = impute_mean
         return np.concatenate((poly, inter), axis=1), to_remove
 
     return poly, to_remove
-
-
-def separate_factor(x, nlevels=4, column_idx = 22):
-    """ Transform a column with categorical variables into different columns with binary data.
-    E.g feature = [1, 2, 1, 3] -> features = [[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]  """
-
-    new_var = np.zeros((x.shape[0], nlevels))
-
-    for i in range(x.shape[0]):
-        for j in range(nlevels):
-            if x[i,column_idx] == j:
-                new_var[j,0] = 1
-
-    x = np.delete(x, column_idx, axis = 1)
-
-    return x, new_var
 
 
 def build_poly(x, degree):
