@@ -101,52 +101,6 @@ def description_feature(means, std, d, n_usable, n_tot):
 
 # %% Pre-processing Methods
 
-def train_data_formatting(tX, degree = 2, cutoff = 0.6, imputation = impute_mean, interaction = False):
-    #separating out the categorical variables
-    #cont_X, fac_X = separate_factor(tX)
-    #applying a missingness filter on the columns/features
-    cont_X, to_remove = missingness_filter(tX, cutoff)
-    #imputing the missing data
-    cont_X = imputation(cont_X)
-    poly = build_poly(cont_X, degree)
-    #poly = np.concatenate((poly, fac_X), axis=1)
-
-    if interaction:
-        inter = build_interaction(cont_X)
-        return np.concatenate((poly, inter), axis=1), to_remove
-
-    return poly, to_remove
-
-
-def separate_factor(x, nlevels=4, column_idx = 22):
-    """ Transform a column with categorical variables into different columns with binary data.
-    E.g feature = [1, 2, 1, 3] -> features = [[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]  """
-
-    new_var = np.zeros((x.shape[0], nlevels))
-
-    for i in range(x.shape[0]):
-        for j in range(nlevels):
-            if x[i,column_idx] == j:
-                new_var[j,0] = 1
-
-    x = np.delete(x, column_idx, axis = 1)
-
-    return x, new_var
-
-
-def build_interaction(x):
-    """ Build a matrix containing the interaction terms of the input features e.g. x1 * x2, x1 * x3, etc """
-
-    comb = np.ones((x.shape[0],)).reshape(-1,1)
-
-    for i in range(x.shape[1]-1):
-        for j in range(i+1,x.shape[1]):
-            temp = x[:,i] * x[:,j]
-            comb = np.concatenate((comb, temp.reshape(-1,1)), axis=1)
-
-    return np.delete(comb, 0, axis = 1)
-
-
 def missingness_filter(cX, cutoff = 0.5):
     """ Removes all features with more than the missingness cutoff """
 
@@ -283,6 +237,78 @@ def merge_jet(idx0, y_pred0, idx1, y_pred1, idx2, y_pred2):
 
     return y
 
+# %% Feature processing
+
+def train_data_formatting(tX, degree = 2, cutoff = 0.6, imputation = impute_mean, interaction = False):
+    #separating out the categorical variables
+    #cont_X, fac_X = separate_factor(tX)
+    #applying a missingness filter on the columns/features
+    cont_X, to_remove = missingness_filter(tX, cutoff)
+    #imputing the missing data
+    cont_X = imputation(cont_X)
+    poly = build_poly(cont_X, degree)
+    #poly = np.concatenate((poly, fac_X), axis=1)
+
+    if interaction:
+        inter = build_interaction(cont_X)
+        return np.concatenate((poly, inter), axis=1), to_remove
+
+    return poly, to_remove
+
+
+def separate_factor(x, nlevels=4, column_idx = 22):
+    """ Transform a column with categorical variables into different columns with binary data.
+    E.g feature = [1, 2, 1, 3] -> features = [[1, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]  """
+
+    new_var = np.zeros((x.shape[0], nlevels))
+
+    for i in range(x.shape[0]):
+        for j in range(nlevels):
+            if x[i,column_idx] == j:
+                new_var[j,0] = 1
+
+    x = np.delete(x, column_idx, axis = 1)
+
+    return x, new_var
+
+
+def build_poly(x, degree):
+    """ Polynomial basis functions for input data x, for j=0 up to j=degree."""
+
+    poly = np.ones((len(x), 1))
+    for deg in range(1, degree+1):
+        n_poly = np.power(x, deg)
+        #n_poly = np.apply_along_axis(standardize, 1, n_poly)
+        poly = np.c_[poly, n_poly]
+
+    return poly
+
+
+def build_interaction(x):
+    """ Build a matrix containing the interaction terms of the input features e.g. x1 * x2, x1 * x3, etc """
+
+    comb = np.ones((x.shape[0],)).reshape(-1,1)
+    for i in range(x.shape[1]-1):
+        for j in range(i+1,x.shape[1]):
+            temp = x[:,i] * x[:,j]
+            comb = np.concatenate((comb, temp.reshape(-1,1)), axis=1)
+
+    return np.delete(comb, 0, axis = 1)
+
+
+def build_poly_inter(x, degree, interaction = False):
+
+    n_features = x.shape[1]
+    comb = np.ones((x.shape[0],)).reshape(-1,1)
+    poly = np.delete(build_poly(x, degree), 0, axis = 1)
+    if interaction:
+        inter = build_interaction(x)
+        poly = np.concatenate((inter, poly), axis=1)
+    x = np.concatenate((comb, poly), axis=1)
+
+    return x
+
+
 # %% Loss functions and Gradients
 
 def sigmoid(t):
@@ -388,7 +414,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
 
     return (w, loss)
 
-# %% Mini-batch, Polynomials, Split data
+# %% Mini-batch and Split data
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
     """ Generate a minibatch iterator for a dataset. """
@@ -407,44 +433,7 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         end_index = min((batch_num + 1) * batch_size, data_size)
         if start_index != end_index:
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
-
-
-def build_poly(x, degree):
-    """ Polynomial basis functions for input data x, for j=0 up to j=degree."""
-
-    poly = np.ones((len(x), 1))
-    for deg in range(1, degree+1):
-        n_poly = np.power(x, deg)
-        #n_poly = np.apply_along_axis(standardize, 1, n_poly)
-        poly = np.c_[poly, n_poly]
-
-    return poly
-
-
-def build_interaction(x):
-    """ Build a matrix containing the interaction terms of the input features e.g. x1 * x2, x1 * x3, etc """
-
-    comb = np.ones((x.shape[0],)).reshape(-1,1)
-    for i in range(x.shape[1]-1):
-        for j in range(i+1,x.shape[1]):
-            temp = x[:,i] * x[:,j]
-            comb = np.concatenate((comb, temp.reshape(-1,1)), axis=1)
-
-    return np.delete(comb, 0, axis = 1)
-
-
-def build_poly_inter(x, degree, interaction = False):
-
-    n_features = x.shape[1]
-    comb = np.ones((x.shape[0],)).reshape(-1,1)
-    poly = np.delete(build_poly(x, degree), 0, axis = 1)
-    if interaction:
-        inter = build_interaction(x)
-        poly = np.concatenate((inter, poly), axis=1)
-    x = np.concatenate((comb, poly), axis=1)
-
-    return x
-
+            
 
 def split_data(x, y, ratio, seed=1):
     """ Split the dataset based on the split ratio."""
