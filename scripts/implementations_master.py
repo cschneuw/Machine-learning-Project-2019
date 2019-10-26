@@ -223,11 +223,17 @@ def compute_loglikelihood(y, tx, w):
     #h = sigmoid(tx.dot(w))
     #return -y.T.dot(np.log(h))-(1-y).T.dot(np.log(1-h))
     
+    #loss = 0
+    #for n in range(len(y)):
+        #loss +=  np.log(1+np.exp((tx[n].T).dot(w))) - y[n]*(tx[n].T).dot(w)
+        #loss +=  np.log(1+np.exp((tx[n]).dot(w))) - y[n]*(tx[n]).dot(w)
+    #return loss
+
     loss = 0
     for n in range(len(y)):
-        loss +=  np.log(1+np.exp((tx[n].T).dot(w))) - y[n]*(tx[n].T).dot(w)
-        #loss +=  np.log(1+np.exp((tx[n]).dot(w))) - y[n]*(tx[n]).dot(w)
-    return loss
+        h = sigmoid(((tx[n]).T).dot(w))
+        loss -= y[n]*np.log(h)+(1-y[n])*np.log(1-h)
+    return loss/len(y)
 
 
 def compute_gradient(y, tx, w):
