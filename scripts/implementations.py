@@ -965,7 +965,7 @@ def vis_cv_acc(degrees,lambdas,acc_measures):
     plt.subplot(2, 2, 4)
     cross_validation_visualization(degrees, acc_measures["f1_tr"], acc_measures["f1_te"], lambdas, "F1")
 
-def make_prediction(tX, weights, rmX, median, degree, train_data_measures, interaction = False, ml_function = "ri"):
+def make_prediction(tX, weights, rmX, median, degree, train_data_measures, interactions = False, ml_function = "ri"):
     #delete features
     print("Deleting features...",end="")
     tX = np.delete(tX, rmX, axis = 1)
@@ -979,10 +979,10 @@ def make_prediction(tX, weights, rmX, median, degree, train_data_measures, inter
     
     #data augmentation
     print("Building data matrix...",end="")
-    tX = build_poly_inter(tX, degree, interaction)
+    tX = build_poly_inter(tX, degree, interactions)
     print("done",end="\n")
     
-    assert tX.shape[1] == weights.shape[0]
+    #assert tX.shape[1] == weights.shape[0]
     
     #standardization
     print("Standardizing data matrix...",end="")
