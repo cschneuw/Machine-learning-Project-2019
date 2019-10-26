@@ -964,3 +964,37 @@ def vis_cv_acc(degrees,lambdas,acc_measures):
     cross_validation_visualization(degrees, acc_measures["rec_tr"], acc_measures["rec_te"], lambdas, "recall")
     plt.subplot(2, 2, 4)
     cross_validation_visualization(degrees, acc_measures["f1_tr"], acc_measures["f1_te"], lambdas, "F1")
+
+def make_prediction(tX, weights, rmX, median, degree, train_data_measures, interaction = False, ml_function = "ri"):
+    #delete features
+    print("Deleting features...",end="")
+    tX = np.delete(tX, rmX, axis = 1)
+    print("done",end="\n")
+
+    
+    #impute missing data
+    print("Imputing missing data...",end="")
+    tX = impute_median_from_train(tX, median)
+    print("done",end="\n")
+    
+    #data augmentation
+    print("Building data matrix...",end="")
+    tX = build_poly_inter(tX, degree, interaction)
+    print("done",end="\n")
+    
+    assert tX.shape[1] == weights.shape[0]
+    
+    #standardization
+    print("Standardizing data matrix...",end="")
+    tX = standardize_test(tX, train_data_measures["mean"], train_data_measures["std"])
+    print("done",end="\n")
+    
+    print("Making predictions...",end="")
+    if ml_function == "lr" or ml_function == "rlr":
+        y_pred = our_predict_labels(weights, tX, log = True)
+    else:
+        y_pred = our_predict_labels(weights, tX, log = False)
+    print("done")
+    
+    return y_pred
+    
