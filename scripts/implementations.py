@@ -97,6 +97,7 @@ def description_feature(means, std, d, n_usable, n_tot):
     text += "{}".format(d) + '\n' + '\n'
     text += "usable n:"+ '\n'
     text += "{}/{} = {}%".format(n_usable, n_tot, round(100*n_usable/n_tot))
+    
     return text
 
 # %% Pre-processing Methods
@@ -112,6 +113,7 @@ def missingness_filter(cX, cutoff = 0.5):
     zero_col = np.where((cX==0).all(0))
     # combine indices of all the features to remove
     to_remove= np.append(to_remove, zero_col)
+    
     return np.delete(cX, to_remove, axis = 1), to_remove
 
 
@@ -124,6 +126,7 @@ def impute_mean(x):
     inds = np.where(np.isnan(x))
     #replace by the mean of the feature
     x[inds] = np.take(mean, inds[1])
+    
     return x
 
 
@@ -163,6 +166,7 @@ def impute_median_from_train(x, median):
     inds = np.where(np.isnan(x))
     #replace by the median of the feature given as input
     x[inds] = np.take(median, inds[1])
+    
     return x
 
 
@@ -204,6 +208,7 @@ def standardize_test(x, tr_mean, tr_std):
 
     x = x - tr_mean
     x = x / tr_std
+    
     return x
 
 
@@ -225,6 +230,7 @@ def remove_outliers(y, x, feature_index, threshold):
         indices = [i for (i, xi) in enumerate(x[:, f_idx]) if xi > thres]
         x = np.delete(x, indices, axis=0)
         y = np.delete(y, indices, axis=0)
+        
     return y, x
 
 # %% Data jet subsets handling
@@ -247,8 +253,6 @@ def separate_jet(y, tx):
     tx_jet0 = np.delete(tx_jet0, 22, axis=1)
     tx_jet1 = np.delete(tx_jet1, 22, axis=1)
     tx_jet2 = np.delete(tx_jet2, 22, axis=1)
-
-    return idx0, y_jet0, tx_jet0, idx1, y_jet1, tx_jet1, idx2, y_jet2, tx_jet2
 
     return idx0, y_jet0, tx_jet0, idx1, y_jet1, tx_jet1, idx2, y_jet2, tx_jet2
 
@@ -336,6 +340,7 @@ def compute_mse(y, tx, w):
     """ Compute the mse for vector e."""
 
     e = y - tx.dot(w)
+    
     return e.T.dot(e) / (2*len(y))
 
 
@@ -343,6 +348,7 @@ def compute_loglikelihood(y, tx, w):
     """ Compute the cost by negative log likelihood."""
 
     h = sigmoid(tx.dot(w))
+    
     return -y.T.dot(np.log(h))-(1-y).T.dot(np.log(1-h))
 
 
@@ -350,6 +356,7 @@ def compute_gradient(y, tx, w):
     """ Compute the gradient."""
 
     e = y - tx.dot(w)
+    
     return - tx.T.dot(e) / len(e)
 
 
@@ -357,6 +364,7 @@ def compute_log_gradient(y, tx, w):
     """ Compute the gradient of loss."""
 
     h = sigmoid(tx.dot(w))
+    
     return tx.T.dot(h-y)
 
 # %% Machine Learning Methods
