@@ -28,6 +28,5 @@ data/submissionlsdeg1.csv
 data/submissionrlrdeg1.csv
 *.txt
 *.csv
-*.ipynb
 *.pyc
 *__pycache__*
