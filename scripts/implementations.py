@@ -273,11 +273,11 @@ def merge_jet(idx0, y_pred0, idx1, y_pred1, idx2, y_pred2):
 
 # %% Feature processing
 
-def build_poly(x, degree):
+def build_poly(x, d):
     """ Polynomial basis functions for input data x, for j=0 up to j=degree."""
 
     poly = np.ones((len(x), 1))
-    for deg in range(1, degree+1):
+    for deg in range(1, d+1):
         n_poly = np.power(x, deg)
         #n_poly = np.apply_along_axis(standardize, 1, n_poly)
         poly = np.c_[poly, n_poly]
@@ -308,7 +308,7 @@ def build_interaction(x):
     return np.delete(comb, 0, axis = 1)
 
 
-def build_poly_inter(x, degree, interaction = False):
+def build_poly_inter(x, d, interaction = False):
     """Compute polynomial data augmentation with or without interaction terms"""
 
     #number of columns/features of the input matrix x
@@ -318,7 +318,7 @@ def build_poly_inter(x, degree, interaction = False):
     comb = np.ones((x.shape[0],)).reshape(-1,1)
 
     #build the polynomial matrix, remove the first column containing only ones (offset)
-    poly = np.delete(build_poly(x, degree), 0, axis = 1)
+    poly = np.delete(build_poly(x, d), 0, axis = 1)
 
     if interaction:
         #build first order interactions
@@ -815,36 +815,39 @@ def build_final_model(y, x, degree, lambda_, ml_function = 'ri', gamma = 0.05, i
     return w, loss, acc_measures, data_measures
 
 
-def make_prediction(tX, weights, rmX, median, degree, train_data_measures, interactions = False, ml_function = "ri"):
+def make_prediction(tx, weights, rmx, median, d, train_data_measures, interactions = False, ml_function = "ri"):
     """Return predicted labels with trained weights"""
 
     #delete features
     print("Deleting features...",end="")
-    tX = np.delete(tX, rmX, axis = 1)
+    tx = np.delete(tx, rmx, axis = 1)
     print("done",end="\n")
 
     #impute missing data
     print("Imputing missing data...",end="")
-    tX = impute_median_from_train(tX, median)
-    print("done",end="\n")
+    tx = impute_median_from_train(tx, median)
+    print("done",end="\n")    
 
     #data augmentation
     print("Building data matrix...",end="")
-    tX = build_poly_inter(tX, degree, interactions)
+    tx = build_poly_inter(tx, d, interactions)
     print("done",end="\n")
+    
+    
+    print(tx.shape,weights.shape)
 
-    #assert tX.shape[1] == weights.shape[0]
+    assert tx.shape[1] == weights.shape[0]
 
     #standardization
     print("Standardizing data matrix...",end="")
-    tX = standardize_test(tX, train_data_measures["mean"], train_data_measures["std"])
+    tx = standardize_test(tx, train_data_measures["mean"], train_data_measures["std"])
     print("done",end="\n")
 
     print("Making predictions...",end="")
     if ml_function == "lr" or ml_function == "rlr":
-        y_pred = our_predict_labels(weights, tX, log = True)
+        y_pred = our_predict_labels(weights, tx, log = True)
     else:
-        y_pred = our_predict_labels(weights, tX, log = False)
+        y_pred = our_predict_labels(weights, tx, log = False)
     print("done")
 
     return y_pred
