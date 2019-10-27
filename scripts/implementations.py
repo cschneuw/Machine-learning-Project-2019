@@ -102,13 +102,17 @@ def description_feature(means, std, d, n_usable, n_tot):
 # %% Pre-processing Methods
 
 def missingness_filter(cX, cutoff = 0.5):
-    """ Removes all features with more than the missingness cutoff """
+    """ Removes all features with more than the missingness cutoff and all-zero features. """
 
     cX = np.where(cX == -999, np.nan, cX)
     missingness = np.sum(np.isnan(cX), axis = 0)/cX.shape[0]
-
+    # keep index of features with missing data proportion higher than the threshold
     to_remove = np.where(missingness > cutoff)[0]
-
+    # keep index with all-zero features
+    zero_col = np.where((cX==0).all(0))
+    # combine indices of all the features to remove
+    to_remove= np.append(to_remove, zero_col)
+    
     return np.delete(cX, to_remove, axis = 1), to_remove
 
 
@@ -117,10 +121,8 @@ def impute_mean(x):
 
     #compute mean of all features, ignoring nan/missing values
     mean = np.nanmean(x, axis=0)
-
     #find indices of missing data
     inds = np.where(np.isnan(x))
-
     #replace by the mean of the feature
     x[inds] = np.take(mean, inds[1])
     return x
@@ -131,10 +133,8 @@ def impute_median(x):
 
     #compute median of all features, ignoring nan/missing values
     median = np.nanmedian(x, axis=0)
-
     #find indices of missing data
     inds = np.where(np.isnan(x))
-
     #replace by the median of the feature
     x[inds] = np.take(median, inds[1])
 
@@ -147,10 +147,8 @@ def impute_median_train(x):
 
     #compute median of all features, ignoring nan/missing values
     median = np.nanmedian(x, axis=0)
-
     #find indices of missing data
     inds = np.where(np.isnan(x))
-
     #replace by the median of the feature
     x[inds] = np.take(median, inds[1])
 
@@ -164,7 +162,6 @@ def impute_median_from_train(x, median):
 
     #find indices of missing data
     inds = np.where(np.isnan(x))
-
     #replace by the median of the feature given as input
     x[inds] = np.take(median, inds[1])
     return x
@@ -175,15 +172,13 @@ def impute_gaussian(x):
 
     #find indices of missing data
     inds = np.where(np.isnan(x))
-
     #compute mean, ignoring nan/missing values
     mean = np.nanmean(x, axis=0)
-
     #compute standard deviation, ignoring nan/missing values
     std = np.nanstd(x, axis=0)
-
     #replace by the mean and some Gaussian noise
     x[inds] = np.take(np.random.normal(loc=mean, scale=std), inds[1])
+    
     return x
 
 
@@ -196,10 +191,8 @@ def standardize_train(x):
     std_x = np.std(x, axis = 0)
     #replace 0 stds in order to prevent division by 0 errors
     std_x = np.where(std_x == 0, 1, std_x)
-
     #center the values
     x = x - mean_x
-
     #scale the values
     x = x / std_x
 
