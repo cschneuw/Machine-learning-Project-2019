@@ -7,9 +7,10 @@ from proj1_helpers import *
 # %% Exploratory Analysis
 
 def plot_feature(ids, tX, y, f, bins=20):
-    """ Returns three subfirgures representing one given feature: a scatter plot of the values regarding the sample,
+    """ Returns three subfirgures representing one given feature : 
+    a scatter plot of the values regarding the sample, 
     a histogram of the apparition per value, and finally statistical information about the given distributions.
-    A color distinction is also shown regarding the label."""
+    A color distinction is also shown regarding the label. """
     # inputs:
     #   - ids is the list of the index of the samples
     #   - tX is the array of samples (for which each feature has a given value)
@@ -102,8 +103,24 @@ def description_feature(means, std, d, n_usable, n_tot):
 
 # %% Pre-processing Methods
 
+def log_transformation(x):
+    """ Apply log transfomation to a list of selected features having a right-skewed distribution in the exploratory analyis. 
+    Namely columns : [0, 2, 5, 9, 13, 16, 19, 21, 23, 26, 29]. 
+    Returns data matrix with transformed columns. """
+    
+    log_col = [0, 2, 5, 9, 13, 16, 19, 21, 23, 26, 29]
+    
+    x_to_log = x[:, log_col]
+    idx = np.where(x_to_log != -999.0)
+    x_to_log[idx] = np.log(1 + x_to_log[idx])
+    x[:, log_col]=x_to_log
+    
+    return x
+
+
 def missingness_filter(cX, cutoff = 0.5):
-    """ Removes all features with more than the missingness cutoff and all-zero features. """
+    """ Remove all features with missing data proportion higher than a cutoff threshold remove all-zero features. 
+    Returns data matrix with removed features and the associated list of column indices. """
 
     cX = np.where(cX == -999, np.nan, cX)
     missingness = np.sum(np.isnan(cX), axis = 0)/cX.shape[0]
@@ -118,7 +135,7 @@ def missingness_filter(cX, cutoff = 0.5):
 
 
 def impute_mean(x):
-    """ Replaces missing datapoints in x by the mean value of non missing data."""
+    """ Replaces missing datapoints in x by the mean value of non missing data. """
 
     #compute mean of all features, ignoring nan/missing values
     mean = np.nanmean(x, axis=0)
@@ -145,7 +162,7 @@ def impute_median(x):
 
 def impute_median_train(x):
     """ Replaces missing datapoints in x by the median of non missing data.
-    Also returns the vector of medians, used to impute the missing values of the test data"""
+    Returns data matrix with imputed feature medians and vector of medians, used to impute the missing values of the test data. """
 
     #compute median of all features, ignoring nan/missing values
     median = np.nanmedian(x, axis=0)
@@ -159,8 +176,7 @@ def impute_median_train(x):
 
 def impute_median_from_train(x, median):
     """ Replaces missing datapoints in x by the median of non missing data.
-    Used for imputing the missing data of the test set from the corresponding median
-    of the train set"""
+    Imputes the missing data of the test set from the corresponding train median. """
 
     #find indices of missing data
     inds = np.where(np.isnan(x))
@@ -171,7 +187,7 @@ def impute_median_from_train(x, median):
 
 
 def impute_gaussian(x):
-    """ Replaces missing datapoints in x by a random value in a gaussian distribution."""
+    """ Replaces missing datapoints in x by a random value in a gaussian distribution with mean and standard deviation calculated from non missing feature data."""
 
     #find indices of missing data
     inds = np.where(np.isnan(x))
@@ -196,7 +212,7 @@ def standardize(x):
 
 
 def standardize_train(x):
-    """Standardize features in train data and returns mean and standard deviation"""
+    """Standardize features in train data x and returns mean and standard deviation"""
 
     #compute the mean of the columns
     mean_x = np.mean(x, axis = 0)
@@ -214,7 +230,7 @@ def standardize_train(x):
 
 
 def standardize_test(x, tr_mean, tr_std):
-    """Standardize features in test data using train mean and standard deviation"""
+    """Standardize features in test data x using train mean and standard deviation"""
 
     x = x - tr_mean
     x = x / tr_std
@@ -223,7 +239,7 @@ def standardize_test(x, tr_mean, tr_std):
 
 
 def standardize_both(x_train, x_test):
-    """Standardize train and test data using 2 previous functions"""
+    """ Returns standardized train and test sets using standardize_train and standardize_test functions. """
 
     std_train_x, mean_x, std_x = standardize_train(x_train)
     std_test_x = standardize_test(x_test, mean_x, std_x)
@@ -231,22 +247,15 @@ def standardize_both(x_train, x_test):
     #return standardized data sets
     return std_train_x, std_test_x
 
-
-def remove_outliers(y, x, feature_index, threshold):
-    """ Removes in y and x the data points if for a list of features,
-    the data point is higher the associated threshold."""
-
-    for f_idx, thres in zip(feature_index, threshold):
-        indices = [i for (i, xi) in enumerate(x[:, f_idx]) if xi > thres]
-        x = np.delete(x, indices, axis=0)
-        y = np.delete(y, indices, axis=0)
-        
-    return y, x
-
 # %% Data jet subsets handling
 
 def separate_jet(y, tx):
-    """ Separate the dataset based on their categorial feature 'jet'."""
+    """ Separate the data in 3 separated sub-sets based on the categorial feature 'jet' in column 22: 'jet'= 0, 'jet'= 1 and 'jet'= 2 or 3. 
+    
+    Returns for each jet subset: 
+    index idx_i containing the indices of the data in the original dataset, 
+    y_jet_i the labels and 
+    tx_jet_i the samples. """
 
     idx0 = np.where(tx[:, 22] == 0)
     idx1 = np.where(tx[:, 22] == 1)
@@ -268,7 +277,8 @@ def separate_jet(y, tx):
 
 
 def merge_jet(idx0, y_pred0, idx1, y_pred1, idx2, y_pred2):
-    """ Merge the predictions generated using the separated weights generated by training on sub-datasets."""
+    """ Merge the predictions y_pred_i generated using the 3 separated weights trained training on jet sub-datasets. Uses the indices of the samples in the original dataset returned by separate_jet to reconstruct the full label array. 
+    Returns y the full predictions array. """
 
     y = np.empty(len(y_pred0)+len(y_pred1)+len(y_pred2))
     y[idx0]=y_pred0
@@ -280,7 +290,7 @@ def merge_jet(idx0, y_pred0, idx1, y_pred1, idx2, y_pred2):
 # %% Feature processing
 
 def build_poly(x, d):
-    """ Polynomial basis functions for input data x, for j=0 up to j=degree."""
+    """ Polynomial basis functions for input data x, for n=0 up to n=d-1 the maximal degree. """
 
     poly = np.ones((len(x), 1))
     for deg in range(1, d+1):
@@ -292,7 +302,7 @@ def build_poly(x, d):
 
 
 def build_interaction(x):
-    """ Build a matrix containing the interaction terms of the input features e.g. x1 * x2, x1 * x3, etc """
+    """ Build a matrix containing the interaction terms so the multiplication of input features e.g. x1 * x2, x1 * x3, etc. """
 
     #column of ones
     comb = np.ones((x.shape[0],)).reshape(-1,1)
@@ -315,7 +325,9 @@ def build_interaction(x):
 
 
 def build_poly_inter(x, d, interaction = False):
-    """Compute polynomial data augmentation with or without interaction terms"""
+    """Compute polynomial data augmentation with or without the interaction terms. 
+    Uses functions build_poly and build_interaction. 
+    Returns the augmented dataset up to degree d-1. """
 
     #number of columns/features of the input matrix x
     n_features = x.shape[1]
@@ -341,13 +353,13 @@ def build_poly_inter(x, d, interaction = False):
 # %% Loss functions and Gradients
 
 def sigmoid(t):
-    """ Apply sigmoid function on t."""
+    """ Apply sigmoid function on t. """
 
     return 1/(1+np.exp(-t))
 
 
 def compute_mse(y, tx, w):
-    """ Compute the mse for vector e."""
+    """ Compute the mse for vector e. """
 
     e = y - tx.dot(w)
     
@@ -355,7 +367,7 @@ def compute_mse(y, tx, w):
 
 
 def compute_loglikelihood(y, tx, w):
-    """ Compute the cost by negative log likelihood."""
+    """ Compute the cost by negative log likelihood. """
 
     h = sigmoid(tx.dot(w))
     
@@ -363,7 +375,7 @@ def compute_loglikelihood(y, tx, w):
 
 
 def compute_gradient(y, tx, w):
-    """ Compute the gradient."""
+    """ Compute the gradient. """
 
     e = y - tx.dot(w)
     
@@ -371,7 +383,7 @@ def compute_gradient(y, tx, w):
 
 
 def compute_log_gradient(y, tx, w):
-    """ Compute the gradient of loss."""
+    """ Compute the gradient of loss. """
 
     h = sigmoid(tx.dot(w))
     
@@ -424,7 +436,7 @@ def ridge_regression(y, tx, lambda_):
 
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
-    """ Logistic regression using GD. """
+    """ Logistic regression using gradient descent. """
 
     w = initial_w
     for n_iter in range(max_iters):
@@ -436,7 +448,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
 
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    """ Regularized logistic regression using GD. """
+    """ Regularized logistic regression using gradient descent. """
 
     N = len(y)
     w = initial_w
@@ -450,7 +462,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
 # %% Mini-batch and Split data
 
 def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
-    """ Generate a minibatch iterator for a dataset. """
+    """ Generate a mini-batches iterator for y train labels and tx train data. The mini-batches are used to perform a stochastic gradient descent. """
 
     data_size = len(y)
 
@@ -469,7 +481,8 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
 
 
 def split_data(x, y, ratio, seed=1):
-    """ Split the dataset based on the split ratio."""
+    """ Split labels y and x data based on the split ratio.
+    Returns the data and labels for train x_tr, y_tr and test sets labels x_te, y_te. """
 
     np.random.seed(seed)
     num_row = len(y)
@@ -493,7 +506,7 @@ def split_data(x, y, ratio, seed=1):
 # %% Cross-validation and Bias-variance Decomposition
 
 def build_k_indices(y, k_fold, seed):
-    """ Build k indices for k-fold."""
+    """ Returns k indices for k-fold cross validation."""
 
     num_row = y.shape[0]
     interval = int(num_row / k_fold)
@@ -506,19 +519,13 @@ def build_k_indices(y, k_fold, seed):
 
 
 def compute_accuracy_measures(true_labels, pred_labels):
-    """Computes accuracy measures from the true and predicted labels
-    if you only want one of the following measures, you can just put a _ at the corresponding outputs
-
+    """Computes accuracy measures from the true and predicted labels.
+    To get only one of the following measures, put an underscore _ at the corresponding outputs. The computed accuracy measures are ratios of true potitives (tp), true negatives (tn), false positives (fp) and false negatives (fn). 
     Returns:
-    --------
-    accuracy: scalar
-        accuracy of the model (tp + tn / total number of samples)
-    precision: scalar
-        precision of the model (tp/(tp + fp))
-    recall: scalar
-        recall of the model (tp/(tp + fn))
-    F1: scalar
-        model's F1 measure (2*precision*recall/(precision + recall))
+    accuracy of the model ((tp + tn) / total number of samples),
+    precision of the model (tp/(tp + fp)),
+    recall of the model (tp/(tp + fn)),
+    F1 score (2*precision*recall/(precision + recall))
     """
 
     if true_labels.shape[0] != pred_labels.shape[0]:
@@ -563,8 +570,9 @@ def compute_accuracy_measures(true_labels, pred_labels):
     return accuracy, precision, recall, F1
 
 
-def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_function = 'ls', max_iters = 0, gamma = 0.05, verbose = False, interaction = False):
-    """ Returns a list the train losses and test losses of the cross validation."""
+def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_function = 'gd', max_iters = 0, gamma = 0.05, verbose = False, interaction = False):
+    """ Performs k-fold cross-validations for each of the machine learning algorithms. To choose the algorithm to optimize set the ml_function string to 'gd' for least_squares_GD, 'sgd for least_squares_SGD, 'ri' for ridge_regression, 'lr' for logistic_regression and 'rlr' for reg_logistic_regresion. 
+    Returns a list the train losses, test losses and accuracy measures of the cross validation. """
 
     #build data matrix with max number of degrees
     n_features = x.shape[1]
@@ -712,7 +720,8 @@ def cross_validation_wAcc(y, x, k_indices, k_fold, degrees, lambdas = [0], ml_fu
 
 
 def cross_validation_visualization(degrees, loss_tr, loss_te, lambds=[], y_label = "error"):
-    """visualization the curves of train error and test error."""
+    """Builds a visualization of the cross-validation results with the train and test losses returned by cross_validation passed in argument. Plots two curve per degree (train and test) with the lambdas in x axis and the losses in y axis. """
+    
     N = len(degrees)
     cmap = plt.get_cmap('jet_r')
     mask_tr = np.isfinite(loss_tr)
@@ -753,7 +762,8 @@ def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te):
 
 
 def vis_cv_acc(degrees,lambdas,acc_measures):
-    """Plots accuracy measures from the cross-validation"""
+    """Visualize the cross-validation results with the accuracy measure returned by cross_validation passed in argument. Builds 4 plots, one per accuracy measure: accuracy, precision, recall and F1-score. On each of the 4 plots, representes two curve per degree (train and test) with the lambdas in x axis and the accuraci in y axis. """
+    
     plt.figure(figsize=(10,10))
     plt.subplot(2, 2, 1)
     cross_validation_visualization(degrees, acc_measures["acc_tr"], acc_measures["acc_te"], lambdas, "accuracy")
@@ -767,7 +777,8 @@ def vis_cv_acc(degrees,lambdas,acc_measures):
 # %% Predictions
 
 def our_predict_labels(weights, data, log = False):
-    """Generates class predictions given weights, and a test data matrix"""
+    """Generates class predictions given weights, and a test data matrix.
+    Returns the predicted labels y."""
 
     if log:
         y_pred = np.dot(data, weights)
@@ -781,7 +792,7 @@ def our_predict_labels(weights, data, log = False):
 
 
 def build_final_model(y, x, degree, lambda_, ml_function = 'ri', gamma = 0.05, interaction = False):
-    """Return weights once optimal parameters are set, accuracy measures and statistics of the data"""
+    """Return weights once optimal parameters are set as well as the associated loss, accuracy measures and augmented data to polynomial degree. To choose the algorithm to use to build the final model set the ml_function string to 'gd' for least_squares_GD, 'sgd for least_squares_SGD, 'ri' for ridge_regression, 'lr' for logistic_regression and 'rlr' for reg_logistic_regresion. """
 
     #build the data matrix
     x = build_poly_inter(x, degree, interaction)
@@ -826,7 +837,8 @@ def build_final_model(y, x, degree, lambda_, ml_function = 'ri', gamma = 0.05, i
 
 
 def make_prediction(tx, weights, rmx, median, d, train_data_measures, interactions = False, ml_function = "ri"):
-    """Return predicted labels with trained weights"""
+    """ Make prediction with data tx and trained model weights. The data tx is processed using the same parameters as the data used to train the model: the same columns are removed, missing data is replaced by median, the data is augmented to degree d and standardized using train mean and standard deviations in train_data_measures.
+    Returns predicted labels y_pred. """
 
     #delete features
     print("Deleting features...",end="")
