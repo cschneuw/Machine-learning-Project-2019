@@ -842,9 +842,6 @@ def make_prediction(tx, weights, rmx, median, d, train_data_measures, interactio
     print("Building data matrix...",end="")
     tx = build_poly_inter(tx, d, interactions)
     print("done",end="\n")
-    
-    
-    print(tx.shape,weights.shape)
 
     assert tx.shape[1] == weights.shape[0]
 
