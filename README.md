@@ -32,7 +32,6 @@ Contains all the methods used in this project.
 - **`impute_median_train`**: Replaces missing data by feature median and returns median list
 - **`impute_median_from_train`**: Replaces missing data by feature median computed on train
 - **`impute_gaussian`**: Replaces missing data by point in a gaussian distribution 
-- **`standardize`**: Standarize features
 - **`standardize_train`**: Standarize features in train data and returns mean and standard deviation
 - **`standardize_test`**: Standarize features in test data using train mean and standard deviation
 - **`standardize_both`**: Standarize train and test data using 2 previous functions
