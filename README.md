@@ -26,6 +26,7 @@ Contains all the methods used in this project.
 - **`compute_feature`**: Statistics from two datasets
 - **`description_feature`**: Text descrption of principal statistics
 ##### Pre-processing Methods
+- **`log_transformation`**: Apply log transform log(1+x) to right-skewed features.
 - **`missingness_filter`**: Remove features with missing data higher than a threshold
 - **`impute_mean`**: Replaces missing data by feature mean
 - **`impute_median`**: Replaces missing data by feature median
@@ -35,7 +36,6 @@ Contains all the methods used in this project.
 - **`standardize_train`**: Standardize features in train data and returns mean and standard deviation
 - **`standardize_test`**: Standardize features in test data using train mean and standard deviation
 - **`standardize_both`**: Standardize train and test data using 2 previous functions
-- **`remove_outliers`**: Remove datapoints if value is higher than a threshold
 ##### Data jet subsets handling
 - **`separate_jet`**: Separate categorical data  based on 'jet' value
 - **`merge_jet`**: Merge the predictions from different data subsetss
@@ -50,13 +50,12 @@ Contains all the methods used in this project.
 - **`compute_gradient`**: Gradient of least square loss function
 - **`compute_log_gradient`**: Gradient of negative loglikelihood loss function
 ##### Machine learning methods
-- **`least_squares_gd`**: Linear regression using gradient descent
-- **`least_squares_sgd`**: Linear regression using stochastic gradient descent
 - **`least_squares`**: Least squares regression using normal equations
+- **`least_squares_GD`**: Linear regression using gradient descent
+- **`least_squares_SGD`**: Linear regression using stochastic gradient descent
 - **`ridge_regression`**: Ridge regression using normal equations
-- **`logistic_regression`**: using stochastic gradient descent
-- **`reg_logistic_regression`**: Regularized logistic regression
-As well as additional methods used for code optimization.
+- **`logistic_regression`**: Logistic regression using gradient descent
+- **`reg_logistic_regression`**: Regularized logistic regression using gradient descent
 ##### Mini-batch and Split data
 - **`batch_iter`**: Mini-batch creation for stochastic gradient descent
 - **`split_data`**: Split data in test and train sets
