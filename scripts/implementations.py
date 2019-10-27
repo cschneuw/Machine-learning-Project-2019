@@ -112,7 +112,6 @@ def missingness_filter(cX, cutoff = 0.5):
     zero_col = np.where((cX==0).all(0))
     # combine indices of all the features to remove
     to_remove= np.append(to_remove, zero_col)
-    
     return np.delete(cX, to_remove, axis = 1), to_remove
 
 
