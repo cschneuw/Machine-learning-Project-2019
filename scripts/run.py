@@ -12,8 +12,6 @@ y, tX, ids = load_csv_data('../data/train.csv')
 
 # %% Pre-process training data and divide into jet subsets
 
-tX = log_transformation(tX)
-
 # Separate into 3 groups based on jet values
 _, y_jet0, tX_jet0, _, y_jet1, tX_jet1, _, y_jet2, tX_jet2 = separate_jet(y, tX)
 
@@ -49,7 +47,6 @@ _, tX_test, ids_test = load_csv_data('../data/test.csv')
 
 # %% Pre-process testing data and divide into jet subsets
 
-tX_test = log_transformation(tX_test)
 idx_test0, _, tX_test0, idx_test1, _, tX_test1, idx_test2, _, tX_test2 = separate_jet(np.zeros(tX_test.shape[0]), tX_test)
 
 # %% Make predictions
