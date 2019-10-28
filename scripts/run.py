@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from helpers import *
+from proj1_helpers import *
 from implementations import *
 
 # %% Load training data 
@@ -18,6 +18,7 @@ tX = log_transformation(tX)
 _, y_jet0, tX_jet0, _, y_jet1, tX_jet1, _, y_jet2, tX_jet2 = separate_jet(y, tX)
 
 # Remove features with too much missing data
+missingness_cutoff = 0.95
 tX_jet0, rmX_jet0 = missingness_filter(tX_jet0, missingness_cutoff)
 tX_jet1, rmX_jet1 = missingness_filter(tX_jet1, missingness_cutoff)
 tX_jet2, rmX_jet2 = missingness_filter(tX_jet2, missingness_cutoff)
@@ -31,15 +32,15 @@ w_interaction = True
 
 degree_ri_jet0 = 10
 lambda_ri_jet0 = 3.831e-15
-w0_ri, _, _, _ = build_final_model(y_jet0, tX_jet0, degree_ri_jet0,
+w0_ri, _, _, data_meas0_ri = build_final_model(y_jet0, tX_jet0, degree_ri_jet0,
                                                       lambda_ri_jet0, ml_function = 'ri', interaction = w_interaction)
 degree_ri_jet1 = 13
 lambda_ri_jet1 = 1e-12
-w1_ri, _, _, _ = build_final_model(y_jet1, tX_jet1, degree_ri_jet1,
+w1_ri, _, _,  data_meas1_ri = build_final_model(y_jet1, tX_jet1, degree_ri_jet1,
                                                       lambda_ri_jet1, ml_function = 'ri', interaction = w_interaction)
 degree_ri_jet2 = 14
 lambda_ri_jet2 = 1e-13
-w2_ri, _, _, _ = build_final_model(y_jet2, tX_jet2, degree_ri_jet2,
+w2_ri, _, _,  data_meas2_ri = build_final_model(y_jet2, tX_jet2, degree_ri_jet2,
                                                       lambda_ri_jet2, ml_function = 'ri', interaction = w_interaction)
 
 # %% Load testing data
