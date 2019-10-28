@@ -72,7 +72,11 @@ Contains all the methods used in this project.
 - **`make prediction`**: Return predicted labels with trained weights
 
 #### `run.py`
-Script that generates the exact CSV file submitted on AIcrowd.
+  Script that generates the exact CSV file submitted on AIcrowd. Uses the following funtions: 
+  
+  `load_csv_data` to load the raw CERN data as labels y, data tX and indices ids. `separate_jet` to separate y and tX into 3 jet subsets: jet = 0, jet = 1 and jet = 2, 3. `missingness_filter` removes features with too much invalid data and `impute_median_train`replaces the remaining missing data points with feature median. We apply the same functions to the test data afterwards. 
+  
+ `w_interaction = True` is a boolean used to build the polynomial basis models with interaction terms and `build_final_model` creates the weight matrix and returns some descriptive statistics used to standardize the test data in `make_prediction`. 
 
 #### `project1.ipynb`
 Python notebook used for tests during this project.
